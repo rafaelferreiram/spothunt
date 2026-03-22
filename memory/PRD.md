@@ -85,7 +85,12 @@ Build CityBlend - a hyperlocal discovery app for travelers. A mobile-first disco
 - **Auth**: Emergent Google OAuth integration
 - **Design**: Custom theme with Fraunces + Plus Jakarta Sans fonts
 
-### Jan 22, 2026 (Session 2)
+### Jan 22, 2026 (Session 3)
+- **Minimalistic Design**: Clean, minimal UI across all pages
+- **Reviews System**: Users can write 1-5 star reviews with text
+- **Cannabis Tab Icon**: Changed to 🌿 emoji with "Greens" label
+- **Cleaner Cards**: Streamlined place and strain cards
+- **Review API**: Full CRUD for reviews on places, dispensaries, and strains
 - **Cannabis Feature**: Full strain and dispensary discovery
 - **Real Data**: Imported Kushy open source cannabis dataset
 - **9,523 Strains**: With effects, THC/CBD, flavors, medical uses
