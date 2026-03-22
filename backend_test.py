@@ -136,6 +136,126 @@ class CityBlendAPITester:
         self.log_test("Test User Creation", False, "MongoDB access needed for auth testing")
         return False
 
+    def test_cannabis_api(self):
+        """Test cannabis endpoints"""
+        print("\n🌿 Testing Cannabis API...")
+        
+        # Test cannabis stats
+        stats_data = self.run_test(
+            "Cannabis Stats",
+            "GET",
+            "cannabis/stats",
+            200
+        )
+        
+        if stats_data and 'total_strains' in stats_data:
+            print(f"   📊 Found {stats_data.get('total_strains', 0)} strains, {stats_data.get('total_dispensaries', 0)} dispensaries")
+        
+        # Test strains list
+        strains_data = self.run_test(
+            "Strains List",
+            "GET",
+            "cannabis/strains?limit=10",
+            200
+        )
+        
+        strain_id = None
+        if strains_data and strains_data.get('strains'):
+            strain_id = strains_data['strains'][0].get('strain_id')
+            print(f"   🌿 Found {len(strains_data['strains'])} strains")
+        
+        # Test strains search
+        self.run_test(
+            "Strains Search",
+            "GET",
+            "cannabis/strains?search=kush&limit=5",
+            200
+        )
+        
+        # Test strains filter by type
+        self.run_test(
+            "Strains Filter (Indica)",
+            "GET",
+            "cannabis/strains?strain_type=indica&limit=5",
+            200
+        )
+        
+        self.run_test(
+            "Strains Filter (Sativa)",
+            "GET",
+            "cannabis/strains?strain_type=sativa&limit=5",
+            200
+        )
+        
+        self.run_test(
+            "Strains Filter (Hybrid)",
+            "GET",
+            "cannabis/strains?strain_type=hybrid&limit=5",
+            200
+        )
+        
+        # Test single strain
+        if strain_id:
+            self.run_test(
+                f"Single Strain ({strain_id})",
+                "GET",
+                f"cannabis/strains/{strain_id}",
+                200
+            )
+        
+        # Test dispensaries list
+        disp_data = self.run_test(
+            "Dispensaries List",
+            "GET",
+            "cannabis/dispensaries?limit=10",
+            200
+        )
+        
+        shop_id = None
+        if disp_data and disp_data.get('dispensaries'):
+            shop_id = disp_data['dispensaries'][0].get('shop_id')
+            print(f"   🏪 Found {len(disp_data['dispensaries'])} dispensaries")
+        
+        # Test dispensaries with location
+        self.run_test(
+            "Dispensaries with Location",
+            "GET",
+            "cannabis/dispensaries?lat=40.7128&lng=-74.0060&limit=10",
+            200
+        )
+        
+        # Test dispensaries filter by city
+        self.run_test(
+            "Dispensaries Filter (Amsterdam)",
+            "GET",
+            "cannabis/dispensaries?city=Amsterdam&limit=5",
+            200
+        )
+        
+        # Test single dispensary
+        if shop_id:
+            self.run_test(
+                f"Single Dispensary ({shop_id})",
+                "GET",
+                f"cannabis/dispensaries/{shop_id}?lat=40.7128&lng=-74.0060",
+                200
+            )
+        
+        # Test effects and flavors
+        self.run_test(
+            "Effects List",
+            "GET",
+            "cannabis/effects",
+            200
+        )
+        
+        self.run_test(
+            "Flavors List",
+            "GET",
+            "cannabis/flavors",
+            200
+        )
+
     def test_authenticated_routes(self):
         """Test routes that require authentication"""
         if not self.session_token:
@@ -170,6 +290,7 @@ class CityBlendAPITester:
         self.test_places_list()
         self.test_place_detail()
         self.test_categories_list()
+        self.test_cannabis_api()  # Add cannabis API testing
         self.test_auth_me_without_token()
 
         # Try to create test user for authenticated tests

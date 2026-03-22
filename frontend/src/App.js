@@ -11,6 +11,9 @@ import Home from "@/pages/Home";
 import PlaceDetail from "@/pages/PlaceDetail";
 import Profile from "@/pages/Profile";
 import SavedPlaces from "@/pages/SavedPlaces";
+import Cannabis from "@/pages/Cannabis";
+import StrainDetail from "@/pages/StrainDetail";
+import DispensaryDetail from "@/pages/DispensaryDetail";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 export const API = `${BACKEND_URL}/api`;
@@ -191,6 +194,30 @@ const AppRouter = () => {
         element={
           <ProtectedRoute>
             <Profile />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/cannabis"
+        element={
+          <ProtectedRoute>
+            <Cannabis />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/strain/:id"
+        element={
+          <ProtectedRoute>
+            <StrainDetail />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dispensary/:id"
+        element={
+          <ProtectedRoute>
+            <DispensaryDetail />
           </ProtectedRoute>
         }
       />

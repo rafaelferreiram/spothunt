@@ -29,6 +29,7 @@ api_router = APIRouter(prefix="/api")
 auth_router = APIRouter(prefix="/api/auth")
 places_router = APIRouter(prefix="/api/places")
 user_router = APIRouter(prefix="/api/user")
+cannabis_router = APIRouter(prefix="/api/cannabis")
 
 # Configure logging
 logging.basicConfig(
@@ -820,6 +821,221 @@ async def get_categories():
         ]
     }
 
+# ============== CANNABIS ROUTES ==============
+
+@cannabis_router.get("/strains")
+async def get_strains(
+    search: Optional[str] = None,
+    strain_type: Optional[str] = None,  # indica, sativa, hybrid
+    effect: Optional[str] = None,
+    flavor: Optional[str] = None,
+    min_thc: Optional[float] = None,
+    max_thc: Optional[float] = None,
+    page: int = 1,
+    limit: int = 20
+):
+    """Get cannabis strains with filters"""
+    query = {}
+    
+    if search:
+        query["$text"] = {"$search": search}
+    
+    if strain_type:
+        query["type"] = {"$regex": strain_type, "$options": "i"}
+    
+    if effect:
+        query["effects"] = {"$regex": effect, "$options": "i"}
+    
+    if flavor:
+        query["flavors"] = {"$regex": flavor, "$options": "i"}
+    
+    if min_thc is not None:
+        query["thc"] = {"$gte": min_thc}
+    
+    if max_thc is not None:
+        if "thc" in query:
+            query["thc"]["$lte"] = max_thc
+        else:
+            query["thc"] = {"$lte": max_thc}
+    
+    skip = (page - 1) * limit
+    
+    cursor = db.strains.find(query, {"_id": 0}).skip(skip).limit(limit)
+    strains = await cursor.to_list(length=limit)
+    
+    total = await db.strains.count_documents(query)
+    
+    return {
+        "strains": strains,
+        "total": total,
+        "page": page,
+        "pages": (total + limit - 1) // limit
+    }
+
+@cannabis_router.get("/strains/{strain_id}")
+async def get_strain(strain_id: str):
+    """Get a single strain by ID"""
+    strain = await db.strains.find_one({"strain_id": strain_id}, {"_id": 0})
+    if not strain:
+        # Try finding by name
+        strain = await db.strains.find_one(
+            {"name": {"$regex": f"^{strain_id}$", "$options": "i"}},
+            {"_id": 0}
+        )
+    if not strain:
+        raise HTTPException(status_code=404, detail="Strain not found")
+    return strain
+
+@cannabis_router.get("/strains/search/{name}")
+async def search_strain_by_name(name: str, limit: int = 10):
+    """Search strains by name (autocomplete)"""
+    cursor = db.strains.find(
+        {"name": {"$regex": name, "$options": "i"}},
+        {"_id": 0}
+    ).limit(limit)
+    strains = await cursor.to_list(length=limit)
+    return {"strains": strains}
+
+@cannabis_router.get("/dispensaries")
+async def get_dispensaries(
+    lat: Optional[float] = None,
+    lng: Optional[float] = None,
+    city: Optional[str] = None,
+    state: Optional[str] = None,
+    country: Optional[str] = None,
+    search: Optional[str] = None,
+    max_distance: Optional[int] = 50000,  # meters (50km default)
+    page: int = 1,
+    limit: int = 20
+):
+    """Get dispensaries with location and filters"""
+    query = {"is_dispensary": True}
+    
+    if city:
+        query["city"] = {"$regex": city, "$options": "i"}
+    
+    if state:
+        query["state"] = {"$regex": state, "$options": "i"}
+    
+    if country:
+        query["country"] = country.upper()
+    
+    if search:
+        query["$or"] = [
+            {"name": {"$regex": search, "$options": "i"}},
+            {"city": {"$regex": search, "$options": "i"}}
+        ]
+    
+    skip = (page - 1) * limit
+    
+    cursor = db.dispensaries.find(query, {"_id": 0}).skip(skip).limit(limit)
+    dispensaries = await cursor.to_list(length=limit)
+    
+    # Calculate distances if user location provided
+    if lat and lng:
+        for disp in dispensaries:
+            coords = disp.get("coordinates", {})
+            if coords.get("lat") and coords.get("lng"):
+                disp["distance_m"] = calculate_distance(
+                    lat, lng, coords["lat"], coords["lng"]
+                )
+                disp["walk_mins"] = calculate_walk_time(disp["distance_m"])
+                disp["drive_mins"] = calculate_drive_time(disp["distance_m"])
+                disp["maps_deep_link"] = f"https://www.google.com/maps/search/?api=1&query={coords['lat']},{coords['lng']}"
+        
+        # Sort by distance
+        dispensaries.sort(key=lambda x: x.get("distance_m", float("inf")))
+        
+        # Filter by max distance
+        if max_distance:
+            dispensaries = [d for d in dispensaries if d.get("distance_m", 0) <= max_distance]
+    
+    total = await db.dispensaries.count_documents(query)
+    
+    return {
+        "dispensaries": dispensaries,
+        "total": total,
+        "page": page,
+        "pages": (total + limit - 1) // limit
+    }
+
+@cannabis_router.get("/dispensaries/{shop_id}")
+async def get_dispensary(shop_id: str, lat: Optional[float] = None, lng: Optional[float] = None):
+    """Get a single dispensary by ID"""
+    disp = await db.dispensaries.find_one({"shop_id": shop_id}, {"_id": 0})
+    if not disp:
+        raise HTTPException(status_code=404, detail="Dispensary not found")
+    
+    coords = disp.get("coordinates", {})
+    if lat and lng and coords.get("lat") and coords.get("lng"):
+        disp["distance_m"] = calculate_distance(lat, lng, coords["lat"], coords["lng"])
+        disp["walk_mins"] = calculate_walk_time(disp["distance_m"])
+        disp["drive_mins"] = calculate_drive_time(disp["distance_m"])
+        disp["maps_deep_link"] = f"https://www.google.com/maps/search/?api=1&query={coords['lat']},{coords['lng']}"
+    
+    return disp
+
+@cannabis_router.get("/effects")
+async def get_effects():
+    """Get all unique effects"""
+    pipeline = [
+        {"$unwind": "$effects"},
+        {"$group": {"_id": "$effects"}},
+        {"$sort": {"_id": 1}},
+        {"$limit": 50}
+    ]
+    cursor = db.strains.aggregate(pipeline)
+    effects = [doc["_id"] for doc in await cursor.to_list(length=50)]
+    return {"effects": [e for e in effects if e]}
+
+@cannabis_router.get("/flavors")
+async def get_flavors():
+    """Get all unique flavors"""
+    pipeline = [
+        {"$unwind": "$flavors"},
+        {"$group": {"_id": "$flavors"}},
+        {"$sort": {"_id": 1}},
+        {"$limit": 50}
+    ]
+    cursor = db.strains.aggregate(pipeline)
+    flavors = [doc["_id"] for doc in await cursor.to_list(length=50)]
+    return {"flavors": [f for f in flavors if f]}
+
+@cannabis_router.get("/stats")
+async def get_cannabis_stats():
+    """Get cannabis database statistics"""
+    strain_count = await db.strains.count_documents({})
+    dispensary_count = await db.dispensaries.count_documents({"is_dispensary": True})
+    
+    # Count by type
+    indica_count = await db.strains.count_documents({"type": {"$regex": "indica", "$options": "i"}})
+    sativa_count = await db.strains.count_documents({"type": {"$regex": "sativa", "$options": "i"}})
+    hybrid_count = await db.strains.count_documents({"type": {"$regex": "hybrid", "$options": "i"}})
+    
+    # Count by country
+    us_count = await db.dispensaries.count_documents({"country": "US", "is_dispensary": True})
+    nl_count = await db.dispensaries.count_documents({"country": "NL", "is_dispensary": True})
+    es_count = await db.dispensaries.count_documents({"country": "ES", "is_dispensary": True})
+    ca_count = await db.dispensaries.count_documents({"country": "CA", "is_dispensary": True})
+    th_count = await db.dispensaries.count_documents({"country": "TH", "is_dispensary": True})
+    
+    return {
+        "total_strains": strain_count,
+        "total_dispensaries": dispensary_count,
+        "strains_by_type": {
+            "indica": indica_count,
+            "sativa": sativa_count,
+            "hybrid": hybrid_count
+        },
+        "dispensaries_by_country": {
+            "US": us_count,
+            "Netherlands": nl_count,
+            "Spain": es_count,
+            "Canada": ca_count,
+            "Thailand": th_count
+        }
+    }
+
 # ============== ROOT ROUTES ==============
 
 @api_router.get("/")
@@ -835,6 +1051,7 @@ app.include_router(api_router)
 app.include_router(auth_router)
 app.include_router(places_router)
 app.include_router(user_router)
+app.include_router(cannabis_router)
 
 # CORS middleware
 app.add_middleware(
