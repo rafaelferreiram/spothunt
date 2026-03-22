@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/App";
 import { API } from "@/App";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -12,7 +11,6 @@ import MapView from "@/components/MapView";
 import { 
   Search, 
   MapPin, 
-  SlidersHorizontal,
   Sparkles,
   UtensilsCrossed,
   Wine,
@@ -21,16 +19,18 @@ import {
   Trees,
   Coffee,
   ShoppingBag,
-  X
+  X,
+  Map,
+  LayoutGrid
 } from "lucide-react";
 
 const CATEGORIES = [
   { id: "all", name: "For You", icon: Sparkles },
   { id: "restaurant", name: "Eat", icon: UtensilsCrossed },
   { id: "bar", name: "Drink", icon: Wine },
-  { id: "museum", name: "Explore", icon: Landmark },
+  { id: "museum", name: "Culture", icon: Landmark },
   { id: "attraction", name: "Views", icon: Mountain },
-  { id: "outdoors", name: "Outside", icon: Trees },
+  { id: "outdoors", name: "Nature", icon: Trees },
   { id: "cafe", name: "Coffee", icon: Coffee },
   { id: "market", name: "Markets", icon: ShoppingBag },
 ];
@@ -38,172 +38,122 @@ const CATEGORIES = [
 const Home = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [viewMode, setViewMode] = useState("feed"); // 'feed' or 'map'
+  const [viewMode, setViewMode] = useState("feed");
   const [places, setPlaces] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [openNow, setOpenNow] = useState(false);
-  const [userLocation, setUserLocation] = useState({ lat: 40.7128, lng: -74.0060 }); // NYC default
-  const [locationName, setLocationName] = useState("New York City");
+  const [userLocation, setUserLocation] = useState({ lat: 40.7128, lng: -74.0060 });
+  const [locationName] = useState("New York City");
 
-  // Get user's location
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
-          // For demo, we'll keep NYC as the name
-          // In production, you'd reverse geocode
-        },
-        (error) => {
-          console.log("Geolocation error:", error);
-          // Keep default NYC location
-        }
+        (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => {}
       );
     }
   }, []);
 
-  // Fetch places
   const fetchPlaces = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        lat: userLocation.lat.toString(),
-        lng: userLocation.lng.toString(),
-      });
+      const params = new URLSearchParams({ lat: userLocation.lat.toString(), lng: userLocation.lng.toString() });
+      if (activeCategory !== "all") params.append("category", activeCategory);
+      if (searchQuery) params.append("search", searchQuery);
+      if (openNow) params.append("open_now", "true");
 
-      if (activeCategory !== "all") {
-        params.append("category", activeCategory);
-      }
-      if (searchQuery) {
-        params.append("search", searchQuery);
-      }
-      if (openNow) {
-        params.append("open_now", "true");
-      }
-
-      const response = await fetch(`${API}/places/?${params}`, {
-        credentials: "include",
-      });
-
-      if (!response.ok) throw new Error("Failed to fetch places");
-
-      const data = await response.json();
+      const res = await fetch(`${API}/places/?${params}`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed");
+      const data = await res.json();
       setPlaces(data.places);
-    } catch (error) {
-      console.error("Fetch error:", error);
+    } catch (e) {
+      console.error(e);
     } finally {
       setLoading(false);
     }
   }, [userLocation, activeCategory, searchQuery, openNow]);
 
-  useEffect(() => {
-    fetchPlaces();
-  }, [fetchPlaces]);
+  useEffect(() => { fetchPlaces(); }, [fetchPlaces]);
 
-  // Debounced search
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      fetchPlaces();
-    }, 300);
-    return () => clearTimeout(timeout);
+    const t = setTimeout(() => fetchPlaces(), 300);
+    return () => clearTimeout(t);
   }, [searchQuery]);
 
-  const handlePlaceClick = (placeId) => {
-    navigate(`/place/${placeId}`);
-  };
-
   return (
-    <div className="min-h-screen bg-background pb-24" data-testid="home-page">
+    <div className="min-h-screen bg-background pb-28" data-testid="home-page">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border/50">
-        <div className="px-4 py-3 space-y-3">
+      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm">
+        <div className="px-4 pt-6 pb-4 space-y-4">
           {/* Location & View Toggle */}
           <div className="flex items-center justify-between">
-            <button className="flex items-center gap-2 text-left" data-testid="location-selector">
-              <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center">
-                <MapPin className="w-4 h-4 text-accent" />
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <MapPin className="w-4 h-4 text-primary" />
               </div>
               <div>
-                <p className="font-semibold text-foreground text-sm">{locationName}</p>
-                <p className="text-xs text-muted-foreground">Exploring nearby</p>
+                <p className="font-medium text-sm">{locationName}</p>
+                <p className="text-xs text-muted-foreground">Exploring</p>
               </div>
-            </button>
+            </div>
 
-            {/* View Toggle */}
-            <div className="flex bg-muted rounded-full p-1">
+            <div className="flex bg-muted/50 rounded-xl p-1">
               <button
                 onClick={() => setViewMode("feed")}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
-                  viewMode === "feed"
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground"
-                }`}
+                className={`p-2 rounded-lg transition-all ${viewMode === "feed" ? "bg-background shadow-sm" : ""}`}
                 data-testid="feed-view-btn"
               >
-                Feed
+                <LayoutGrid className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setViewMode("map")}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
-                  viewMode === "map"
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground"
-                }`}
+                className={`p-2 rounded-lg transition-all ${viewMode === "map" ? "bg-background shadow-sm" : ""}`}
                 data-testid="map-view-btn"
               >
-                Map
+                <Map className="w-4 h-4" />
               </button>
             </div>
           </div>
 
-          {/* Search Bar */}
+          {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Search places, vibes..."
+              placeholder="Search places..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-10 h-11 rounded-full bg-muted border-0 focus-visible:ring-2 focus-visible:ring-accent"
+              className="pl-11 h-12 rounded-2xl bg-muted/50 border-0 text-sm"
               data-testid="search-input"
             />
             {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-muted-foreground/20 flex items-center justify-center"
-              >
-                <X className="w-3 h-3 text-muted-foreground" />
+              <button onClick={() => setSearchQuery("")} className="absolute right-4 top-1/2 -translate-y-1/2">
+                <X className="w-4 h-4 text-muted-foreground" />
               </button>
             )}
           </div>
         </div>
 
-        {/* Category Tabs */}
-        <ScrollArea className="w-full">
-          <div className="flex gap-2 px-4 pb-3">
-            {CATEGORIES.map((category) => {
-              const Icon = category.icon;
-              const isActive = activeCategory === category.id;
+        {/* Categories */}
+        <ScrollArea className="w-full border-t border-border/30">
+          <div className="flex gap-2 px-4 py-3">
+            {CATEGORIES.map((cat) => {
+              const Icon = cat.icon;
+              const isActive = activeCategory === cat.id;
               return (
                 <button
-                  key={category.id}
-                  onClick={() => setActiveCategory(category.id)}
+                  key={cat.id}
+                  onClick={() => setActiveCategory(cat.id)}
                   className={`
-                    flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all
-                    ${isActive 
-                      ? "bg-accent text-accent-foreground shadow-sm" 
-                      : "bg-muted text-muted-foreground hover:bg-muted/80"
-                    }
+                    flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all
+                    ${isActive ? "bg-foreground text-background" : "bg-muted/30 text-muted-foreground"}
                   `}
-                  data-testid={`category-${category.id}`}
+                  data-testid={`category-${cat.id}`}
                 >
-                  <Icon className="w-4 h-4" />
-                  {category.name}
+                  <Icon className="w-3.5 h-3.5" />
+                  {cat.name}
                 </button>
               );
             })}
@@ -211,68 +161,51 @@ const Home = () => {
           <ScrollBar orientation="horizontal" className="invisible" />
         </ScrollArea>
 
-        {/* Active Filters */}
+        {/* Filters */}
         <div className="flex gap-2 px-4 pb-3">
           <button
             onClick={() => setOpenNow(!openNow)}
             className={`
-              flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all
-              ${openNow 
-                ? "bg-accent text-accent-foreground" 
-                : "bg-muted text-muted-foreground"
-              }
+              px-3 py-1.5 rounded-lg text-xs font-medium transition-all
+              ${openNow ? "bg-foreground/10 text-foreground" : "text-muted-foreground"}
             `}
             data-testid="open-now-filter"
           >
-            Open Now
-            {openNow && <X className="w-3 h-3 ml-1" />}
+            Open Now {openNow && "×"}
           </button>
         </div>
       </header>
 
       {/* Content */}
-      <main className="px-4 py-4">
+      <main className="px-4 pt-2">
         {viewMode === "feed" ? (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {loading ? (
-              // Loading skeletons
-              Array.from({ length: 4 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="h-64 rounded-3xl bg-muted animate-pulse"
-                />
-              ))
+              [...Array(4)].map((_, i) => <div key={i} className="h-56 rounded-2xl bg-muted/30 animate-pulse" />)
             ) : places.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">No places found</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Try adjusting your filters
-                </p>
+              <div className="text-center py-16 text-muted-foreground">
+                <p className="text-4xl mb-4">🗺️</p>
+                <p>No places found</p>
               </div>
             ) : (
-              places.map((place, index) => (
+              places.map((place, i) => (
                 <FeedCard
                   key={place.id}
                   place={place}
-                  onClick={() => handlePlaceClick(place.id)}
+                  onClick={() => navigate(`/place/${place.id}`)}
                   savedPlaces={user?.saved_places || []}
-                  className={`animate-fade-in stagger-${Math.min(index + 1, 5)}`}
+                  className={`animate-fade-in stagger-${Math.min(i + 1, 5)}`}
                 />
               ))
             )}
           </div>
         ) : (
-          <div className="h-[calc(100vh-280px)] rounded-3xl overflow-hidden">
-            <MapView
-              places={places}
-              userLocation={userLocation}
-              onPlaceClick={handlePlaceClick}
-            />
+          <div className="h-[calc(100vh-260px)] rounded-2xl overflow-hidden">
+            <MapView places={places} userLocation={userLocation} onPlaceClick={(id) => navigate(`/place/${id}`)} />
           </div>
         )}
       </main>
 
-      {/* Bottom Navigation */}
       <BottomNav />
     </div>
   );

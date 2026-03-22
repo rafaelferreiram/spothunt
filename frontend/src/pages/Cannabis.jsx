@@ -1,42 +1,33 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { API } from "@/App";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import BottomNav from "@/components/BottomNav";
 import {
   Search,
-  Leaf,
   MapPin,
-  Sparkles,
-  Zap,
-  Moon,
-  Sun,
   X,
-  SlidersHorizontal,
-  Navigation,
   Star,
-  ChevronRight
+  ChevronRight,
+  Leaf,
+  Sun,
+  Moon
 } from "lucide-react";
 
 const STRAIN_TYPES = [
-  { id: "all", name: "All", icon: Leaf, color: "bg-green-500" },
-  { id: "sativa", name: "Sativa", icon: Sun, color: "bg-amber-500", description: "Energizing & uplifting" },
-  { id: "indica", name: "Indica", icon: Moon, color: "bg-purple-500", description: "Relaxing & calming" },
-  { id: "hybrid", name: "Hybrid", icon: Sparkles, color: "bg-emerald-500", description: "Balanced effects" },
+  { id: "all", name: "All", color: "bg-foreground" },
+  { id: "sativa", name: "Sativa", color: "bg-amber-500", emoji: "☀️" },
+  { id: "indica", name: "Indica", color: "bg-purple-500", emoji: "🌙" },
+  { id: "hybrid", name: "Hybrid", color: "bg-emerald-500", emoji: "✨" },
 ];
 
-const POPULAR_EFFECTS = [
-  "Relaxed", "Happy", "Euphoric", "Uplifted", "Creative", 
-  "Sleepy", "Energetic", "Focused", "Hungry", "Talkative"
-];
+const EFFECTS = ["Relaxed", "Happy", "Euphoric", "Uplifted", "Creative", "Sleepy", "Energetic", "Focused"];
 
 const Cannabis = () => {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "strains");
   const [strains, setStrains] = useState([]);
   const [dispensaries, setDispensaries] = useState([]);
@@ -47,25 +38,19 @@ const Cannabis = () => {
   const [userLocation, setUserLocation] = useState(null);
   const [stats, setStats] = useState(null);
 
-  // Get user location
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => setUserLocation({ lat: 40.7128, lng: -74.006 }) // NYC default
+        () => setUserLocation({ lat: 40.7128, lng: -74.006 })
       );
     }
   }, []);
 
-  // Fetch stats
   useEffect(() => {
-    fetch(`${API}/cannabis/stats`)
-      .then(res => res.json())
-      .then(setStats)
-      .catch(console.error);
+    fetch(`${API}/cannabis/stats`).then(res => res.json()).then(setStats).catch(() => {});
   }, []);
 
-  // Fetch strains
   const fetchStrains = useCallback(async () => {
     setLoading(true);
     try {
@@ -74,18 +59,13 @@ const Cannabis = () => {
       if (selectedType !== "all") params.append("strain_type", selectedType);
       if (selectedEffect) params.append("effect", selectedEffect);
       params.append("limit", "30");
-
       const res = await fetch(`${API}/cannabis/strains?${params}`);
       const data = await res.json();
       setStrains(data.strains || []);
-    } catch (error) {
-      console.error("Fetch strains error:", error);
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
   }, [searchQuery, selectedType, selectedEffect]);
 
-  // Fetch dispensaries
   const fetchDispensaries = useCallback(async () => {
     setLoading(true);
     try {
@@ -96,211 +76,173 @@ const Cannabis = () => {
         params.append("lng", userLocation.lng);
       }
       params.append("limit", "30");
-
       const res = await fetch(`${API}/cannabis/dispensaries?${params}`);
       const data = await res.json();
       setDispensaries(data.dispensaries || []);
-    } catch (error) {
-      console.error("Fetch dispensaries error:", error);
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
   }, [searchQuery, userLocation]);
 
   useEffect(() => {
-    if (activeTab === "strains") {
-      fetchStrains();
-    } else {
-      fetchDispensaries();
-    }
+    if (activeTab === "strains") fetchStrains();
+    else fetchDispensaries();
   }, [activeTab, fetchStrains, fetchDispensaries]);
 
-  // Debounced search
   useEffect(() => {
-    const timeout = setTimeout(() => {
+    const t = setTimeout(() => {
       if (activeTab === "strains") fetchStrains();
       else fetchDispensaries();
     }, 300);
-    return () => clearTimeout(timeout);
+    return () => clearTimeout(t);
   }, [searchQuery]);
 
-  const formatDistance = (meters) => {
-    if (!meters) return "";
-    if (meters < 1000) return `${Math.round(meters)}m`;
-    return `${(meters / 1609.34).toFixed(1)}mi`;
-  };
-
-  const getTypeColor = (type) => {
-    const t = (type || "").toLowerCase();
-    if (t.includes("sativa")) return "bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30";
-    if (t.includes("indica")) return "bg-purple-500/20 text-purple-600 dark:text-purple-400 border-purple-500/30";
-    return "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30";
-  };
+  const formatDistance = (m) => m < 1000 ? `${Math.round(m)}m` : `${(m / 1609.34).toFixed(1)}mi`;
 
   return (
-    <div className="min-h-screen bg-background pb-24" data-testid="cannabis-page">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border/50">
-        <div className="px-4 py-4 space-y-4">
-          {/* Title */}
+    <div className="min-h-screen bg-background pb-28" data-testid="cannabis-page">
+      {/* Minimal Header */}
+      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm">
+        <div className="px-4 pt-6 pb-4 space-y-4">
+          {/* Title Row */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
-                <Leaf className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h1 className="font-heading text-xl font-semibold">Cannabis</h1>
-                <p className="text-xs text-muted-foreground">
-                  {stats ? `${stats.total_strains.toLocaleString()} strains · ${stats.total_dispensaries.toLocaleString()} spots` : "Loading..."}
+            <div>
+              <h1 className="font-heading text-2xl font-semibold tracking-tight">Greens</h1>
+              {stats && (
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {stats.total_strains.toLocaleString()} strains · {stats.total_dispensaries.toLocaleString()} spots
                 </p>
-              </div>
+              )}
             </div>
+            <div className="text-3xl">🌿</div>
           </div>
 
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               type="text"
-              placeholder={activeTab === "strains" ? "Search strains, effects..." : "Search dispensaries..."}
+              placeholder={activeTab === "strains" ? "Search strains..." : "Search spots..."}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-10 h-12 rounded-full bg-muted border-0 focus-visible:ring-2 focus-visible:ring-green-500"
+              className="pl-11 h-12 rounded-2xl bg-muted/50 border-0 text-sm"
               data-testid="cannabis-search"
             />
             {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2"
-              >
+              <button onClick={() => setSearchQuery("")} className="absolute right-4 top-1/2 -translate-y-1/2">
                 <X className="w-4 h-4 text-muted-foreground" />
               </button>
             )}
           </div>
 
-          {/* Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 h-12 rounded-full bg-muted p-1">
-              <TabsTrigger 
-                value="strains" 
-                className="rounded-full data-[state=active]:bg-green-500 data-[state=active]:text-white"
-                data-testid="strains-tab"
-              >
-                <Leaf className="w-4 h-4 mr-2" />
-                Strains
-              </TabsTrigger>
-              <TabsTrigger 
-                value="dispensaries" 
-                className="rounded-full data-[state=active]:bg-green-500 data-[state=active]:text-white"
-                data-testid="dispensaries-tab"
-              >
-                <MapPin className="w-4 h-4 mr-2" />
-                Dispensaries
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          {/* Tab Toggle */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setActiveTab("strains")}
+              className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all ${
+                activeTab === "strains" 
+                  ? "bg-foreground text-background" 
+                  : "bg-muted/50 text-muted-foreground"
+              }`}
+              data-testid="strains-tab"
+            >
+              Strains
+            </button>
+            <button
+              onClick={() => setActiveTab("dispensaries")}
+              className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all ${
+                activeTab === "dispensaries" 
+                  ? "bg-foreground text-background" 
+                  : "bg-muted/50 text-muted-foreground"
+              }`}
+              data-testid="dispensaries-tab"
+            >
+              Spots
+            </button>
+          </div>
         </div>
 
-        {/* Strain Type Filters (only for strains tab) */}
+        {/* Filters */}
         {activeTab === "strains" && (
-          <ScrollArea className="w-full">
-            <div className="flex gap-2 px-4 pb-3">
-              {STRAIN_TYPES.map((type) => {
-                const Icon = type.icon;
-                const isActive = selectedType === type.id;
-                return (
+          <div className="border-t border-border/30">
+            <ScrollArea className="w-full">
+              <div className="flex gap-2 px-4 py-3">
+                {STRAIN_TYPES.map((type) => (
                   <button
                     key={type.id}
                     onClick={() => setSelectedType(type.id)}
                     className={`
-                      flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all
-                      ${isActive 
-                        ? `${type.color} text-white shadow-lg` 
-                        : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      px-4 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all
+                      ${selectedType === type.id 
+                        ? `${type.color} text-white` 
+                        : "bg-muted/30 text-muted-foreground"
                       }
                     `}
                     data-testid={`type-${type.id}`}
                   >
-                    <Icon className="w-4 h-4" />
+                    {type.emoji && <span className="mr-1">{type.emoji}</span>}
                     {type.name}
                   </button>
-                );
-              })}
-            </div>
-            <ScrollBar orientation="horizontal" className="invisible" />
-          </ScrollArea>
-        )}
-
-        {/* Effect Filters (only for strains tab) */}
-        {activeTab === "strains" && (
-          <ScrollArea className="w-full border-t border-border/50">
-            <div className="flex gap-2 px-4 py-3">
-              {POPULAR_EFFECTS.map((effect) => {
-                const isActive = selectedEffect === effect;
-                return (
+                ))}
+              </div>
+              <ScrollBar orientation="horizontal" className="invisible" />
+            </ScrollArea>
+            
+            <ScrollArea className="w-full border-t border-border/20">
+              <div className="flex gap-2 px-4 py-2">
+                {EFFECTS.map((effect) => (
                   <button
                     key={effect}
-                    onClick={() => setSelectedEffect(isActive ? "" : effect)}
+                    onClick={() => setSelectedEffect(selectedEffect === effect ? "" : effect)}
                     className={`
-                      px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all
-                      ${isActive 
-                        ? "bg-green-500 text-white" 
-                        : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                      px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all
+                      ${selectedEffect === effect 
+                        ? "bg-foreground/10 text-foreground font-medium" 
+                        : "text-muted-foreground"
                       }
                     `}
                     data-testid={`effect-${effect}`}
                   >
                     {effect}
-                    {isActive && <X className="w-3 h-3 ml-1 inline" />}
                   </button>
-                );
-              })}
-            </div>
-            <ScrollBar orientation="horizontal" className="invisible" />
-          </ScrollArea>
+                ))}
+              </div>
+              <ScrollBar orientation="horizontal" className="invisible" />
+            </ScrollArea>
+          </div>
         )}
       </header>
 
       {/* Content */}
-      <main className="px-4 py-4">
+      <main className="px-4 pt-2">
         {loading ? (
-          <div className="space-y-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-24 rounded-2xl bg-muted animate-pulse" />
+          <div className="space-y-3">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-20 rounded-2xl bg-muted/30 animate-pulse" />
             ))}
           </div>
         ) : activeTab === "strains" ? (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {strains.length === 0 ? (
-              <div className="text-center py-12">
-                <Leaf className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
-                <p className="text-muted-foreground">No strains found</p>
+              <div className="text-center py-16 text-muted-foreground">
+                <p className="text-4xl mb-4">🍃</p>
+                <p>No strains found</p>
               </div>
             ) : (
               strains.map((strain) => (
-                <StrainCard
-                  key={strain.strain_id}
-                  strain={strain}
-                  onClick={() => navigate(`/strain/${strain.strain_id}`)}
-                />
+                <StrainRow key={strain.strain_id} strain={strain} onClick={() => navigate(`/strain/${strain.strain_id}`)} />
               ))
             )}
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {dispensaries.length === 0 ? (
-              <div className="text-center py-12">
-                <MapPin className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
-                <p className="text-muted-foreground">No dispensaries found nearby</p>
+              <div className="text-center py-16 text-muted-foreground">
+                <p className="text-4xl mb-4">📍</p>
+                <p>No spots found</p>
               </div>
             ) : (
-              dispensaries.map((disp) => (
-                <DispensaryCard
-                  key={disp.shop_id}
-                  dispensary={disp}
-                  onClick={() => navigate(`/dispensary/${disp.shop_id}`)}
-                  formatDistance={formatDistance}
-                />
+              dispensaries.map((d) => (
+                <DispensaryRow key={d.shop_id} dispensary={d} onClick={() => navigate(`/dispensary/${d.shop_id}`)} formatDistance={formatDistance} />
               ))
             )}
           </div>
@@ -312,129 +254,72 @@ const Cannabis = () => {
   );
 };
 
-// Strain Card Component
-const StrainCard = ({ strain, onClick }) => {
-  const getTypeGradient = (type) => {
+const StrainRow = ({ strain, onClick }) => {
+  const getTypeStyle = (type) => {
     const t = (type || "").toLowerCase();
-    if (t.includes("sativa")) return "from-amber-500 to-orange-500";
-    if (t.includes("indica")) return "from-purple-500 to-violet-600";
-    return "from-emerald-500 to-green-600";
+    if (t.includes("sativa")) return { bg: "bg-amber-500/10", text: "text-amber-600 dark:text-amber-400", icon: "☀️" };
+    if (t.includes("indica")) return { bg: "bg-purple-500/10", text: "text-purple-600 dark:text-purple-400", icon: "🌙" };
+    return { bg: "bg-emerald-500/10", text: "text-emerald-600 dark:text-emerald-400", icon: "✨" };
   };
-
-  const getTypeBg = (type) => {
-    const t = (type || "").toLowerCase();
-    if (t.includes("sativa")) return "bg-amber-500/10";
-    if (t.includes("indica")) return "bg-purple-500/10";
-    return "bg-emerald-500/10";
-  };
+  
+  const style = getTypeStyle(strain.type);
+  const effects = (strain.effects || []).filter(e => e && e !== "NULL");
+  const flavors = (strain.flavors || []).filter(f => f && f !== "NULL");
 
   return (
     <div
       onClick={onClick}
-      className={`
-        p-4 rounded-2xl border border-border/50 cursor-pointer
-        transition-all hover:shadow-lg hover:scale-[1.01] active:scale-[0.99]
-        ${getTypeBg(strain.type)}
-      `}
+      className={`p-4 rounded-2xl ${style.bg} cursor-pointer transition-all active:scale-[0.98]`}
       data-testid={`strain-${strain.strain_id}`}
     >
-      <div className="flex items-start gap-4">
-        {/* Type Indicator */}
-        <div className={`
-          w-12 h-12 rounded-xl bg-gradient-to-br ${getTypeGradient(strain.type)}
-          flex items-center justify-center flex-shrink-0
-        `}>
-          <Leaf className="w-6 h-6 text-white" />
-        </div>
-
-        {/* Content */}
+      <div className="flex items-center justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <h3 className="font-semibold text-foreground line-clamp-1">{strain.name}</h3>
-              <p className="text-sm text-muted-foreground capitalize">{strain.type || "Hybrid"}</p>
-            </div>
-            {strain.thc > 0 && (
-              <Badge variant="outline" className="text-xs font-mono shrink-0">
-                THC {strain.thc.toFixed(1)}%
-              </Badge>
-            )}
+          <div className="flex items-center gap-2">
+            <span>{style.icon}</span>
+            <h3 className="font-medium text-foreground truncate">{strain.name}</h3>
           </div>
-
-          {/* Effects */}
-          {strain.effects?.length > 0 && strain.effects.some(e => e && e !== "NULL") && (
-            <div className="flex flex-wrap gap-1 mt-2">
-              {strain.effects.filter(e => e && e !== "NULL").slice(0, 3).map((effect, i) => (
-                <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                  {effect}
-                </span>
-              ))}
-              {strain.effects.filter(e => e && e !== "NULL").length > 3 && (
-                <span className="text-xs text-muted-foreground">+{strain.effects.filter(e => e && e !== "NULL").length - 3}</span>
-              )}
-            </div>
-          )}
-
-          {/* Flavors */}
-          {strain.flavors?.length > 0 && strain.flavors.some(f => f && f !== "NULL") && (
-            <p className="text-xs text-muted-foreground mt-1">
-              🍃 {strain.flavors.filter(f => f && f !== "NULL").slice(0, 3).join(", ")}
+          <div className="flex items-center gap-2 mt-1">
+            <span className={`text-xs ${style.text}`}>{strain.type || "Hybrid"}</span>
+            {strain.thc > 0 && <span className="text-xs text-muted-foreground">· {strain.thc.toFixed(0)}% THC</span>}
+          </div>
+          {effects.length > 0 && (
+            <p className="text-xs text-muted-foreground mt-1.5 truncate">
+              {effects.slice(0, 3).join(" · ")}
             </p>
           )}
         </div>
-
-        <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+        <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
       </div>
     </div>
   );
 };
 
-// Dispensary Card Component
-const DispensaryCard = ({ dispensary, onClick, formatDistance }) => {
-  const getCountryFlag = (country) => {
-    const flags = { US: "🇺🇸", NL: "🇳🇱", ES: "🇪🇸", CA: "🇨🇦", TH: "🇹🇭", DE: "🇩🇪", PT: "🇵🇹" };
-    return flags[country] || "📍";
-  };
-
+const DispensaryRow = ({ dispensary, onClick, formatDistance }) => {
+  const flags = { US: "🇺🇸", NL: "🇳🇱", ES: "🇪🇸", CA: "🇨🇦", TH: "🇹🇭", DE: "🇩🇪", PT: "🇵🇹" };
+  
   return (
     <div
       onClick={onClick}
-      className="p-4 rounded-2xl bg-card border border-border/50 cursor-pointer transition-all hover:shadow-lg hover:scale-[1.01] active:scale-[0.99]"
+      className="p-4 rounded-2xl bg-muted/30 cursor-pointer transition-all active:scale-[0.98]"
       data-testid={`dispensary-${dispensary.shop_id}`}
     >
-      <div className="flex items-start gap-4">
-        {/* Icon */}
-        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shrink-0">
-          <span className="text-2xl">{getCountryFlag(dispensary.country)}</span>
-        </div>
-
-        {/* Content */}
+      <div className="flex items-center justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-foreground line-clamp-1">{dispensary.name}</h3>
-          <p className="text-sm text-muted-foreground line-clamp-1">
-            {dispensary.city}, {dispensary.state || dispensary.country}
-          </p>
-          
-          <div className="flex items-center gap-3 mt-2 text-sm">
+          <div className="flex items-center gap-2">
+            <span>{flags[dispensary.country] || "📍"}</span>
+            <h3 className="font-medium text-foreground truncate">{dispensary.name}</h3>
+          </div>
+          <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+            <span>{dispensary.city}</span>
+            {dispensary.distance_m && <span>· {formatDistance(dispensary.distance_m)}</span>}
             {dispensary.rating > 0 && (
-              <div className="flex items-center gap-1">
-                <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                <span>{dispensary.rating.toFixed(1)}</span>
-              </div>
+              <span className="flex items-center gap-0.5">
+                · <Star className="w-3 h-3 fill-amber-500 text-amber-500" /> {dispensary.rating.toFixed(1)}
+              </span>
             )}
-            {dispensary.distance_m && (
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <MapPin className="w-3.5 h-3.5" />
-                <span>{formatDistance(dispensary.distance_m)}</span>
-              </div>
-            )}
-            <Badge variant="outline" className="text-xs capitalize">
-              {dispensary.type || "Dispensary"}
-            </Badge>
           </div>
         </div>
-
-        <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+        <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
       </div>
     </div>
   );

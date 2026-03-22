@@ -256,6 +256,43 @@ class CityBlendAPITester:
             200
         )
 
+    def test_reviews_api(self):
+        """Test reviews endpoints"""
+        print("\n💬 Testing Reviews API...")
+        
+        # Test get reviews for a place (should work without auth)
+        reviews_data = self.run_test(
+            "Get Place Reviews (nyc_1)",
+            "GET",
+            "reviews/place/nyc_1?place_type=place",
+            200
+        )
+        
+        if reviews_data:
+            print(f"   📝 Found {reviews_data.get('review_count', 0)} reviews, avg rating: {reviews_data.get('avg_rating', 0)}")
+        
+        # Test get reviews for dispensary
+        self.run_test(
+            "Get Dispensary Reviews",
+            "GET", 
+            "reviews/place/test_dispensary?place_type=dispensary",
+            200
+        )
+        
+        # Test create review without auth (should fail)
+        self.run_test(
+            "Create Review (No Auth)",
+            "POST",
+            "reviews/",
+            401,
+            {
+                "place_id": "nyc_1",
+                "place_type": "place", 
+                "rating": 5,
+                "text": "Great place!"
+            }
+        )
+
     def test_authenticated_routes(self):
         """Test routes that require authentication"""
         if not self.session_token:
@@ -277,6 +314,33 @@ class CityBlendAPITester:
         
         # Test get saved places
         self.run_test("Get Saved Places", "GET", "user/saved-places", 200)
+        
+        # Test create review with auth
+        review_data = self.run_test(
+            "Create Review (With Auth)",
+            "POST",
+            "reviews/",
+            200,
+            {
+                "place_id": "nyc_1",
+                "place_type": "place",
+                "rating": 4,
+                "text": "Test review from API testing"
+            }
+        )
+        
+        review_id = None
+        if review_data and 'review_id' in review_data:
+            review_id = review_data['review_id']
+            print(f"   ✅ Created review: {review_id}")
+            
+            # Test delete review
+            self.run_test(
+                f"Delete Review ({review_id})",
+                "DELETE",
+                f"reviews/{review_id}",
+                200
+            )
 
     def run_all_tests(self):
         """Run all API tests"""
@@ -291,6 +355,7 @@ class CityBlendAPITester:
         self.test_place_detail()
         self.test_categories_list()
         self.test_cannabis_api()  # Add cannabis API testing
+        self.test_reviews_api()   # Add reviews API testing
         self.test_auth_me_without_token()
 
         # Try to create test user for authenticated tests

@@ -30,6 +30,7 @@ auth_router = APIRouter(prefix="/api/auth")
 places_router = APIRouter(prefix="/api/places")
 user_router = APIRouter(prefix="/api/user")
 cannabis_router = APIRouter(prefix="/api/cannabis")
+reviews_router = APIRouter(prefix="/api/reviews")
 
 # Configure logging
 logging.basicConfig(
@@ -104,6 +105,27 @@ class TasteProfileUpdate(BaseModel):
 
 class SavePlaceRequest(BaseModel):
     place_id: str
+
+class ReviewCreate(BaseModel):
+    place_id: str
+    place_type: str  # 'place' or 'dispensary'
+    rating: int  # 1-5
+    text: Optional[str] = None
+    photos: List[str] = []
+
+class Review(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    review_id: str
+    user_id: str
+    user_name: str
+    user_picture: Optional[str] = None
+    place_id: str
+    place_type: str
+    rating: int
+    text: Optional[str] = None
+    photos: List[str] = []
+    helpful_count: int = 0
+    created_at: datetime
 
 # ============== AUTH HELPERS ==============
 
@@ -1036,6 +1058,121 @@ async def get_cannabis_stats():
         }
     }
 
+# ============== REVIEWS ROUTES ==============
+
+@reviews_router.post("/")
+async def create_review(
+    review_data: ReviewCreate,
+    user: User = Depends(get_current_user)
+):
+    """Create a new review"""
+    review_id = f"review_{uuid.uuid4().hex[:12]}"
+    
+    review = {
+        "review_id": review_id,
+        "user_id": user.user_id,
+        "user_name": user.name,
+        "user_picture": user.picture,
+        "place_id": review_data.place_id,
+        "place_type": review_data.place_type,
+        "rating": max(1, min(5, review_data.rating)),  # Clamp between 1-5
+        "text": review_data.text,
+        "photos": review_data.photos,
+        "helpful_count": 0,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.reviews.insert_one(review)
+    
+    # Return without _id
+    review.pop("_id", None)
+    return review
+
+@reviews_router.get("/place/{place_id}")
+async def get_place_reviews(
+    place_id: str,
+    place_type: str = "place",
+    page: int = 1,
+    limit: int = 20
+):
+    """Get reviews for a place or dispensary"""
+    skip = (page - 1) * limit
+    
+    cursor = db.reviews.find(
+        {"place_id": place_id, "place_type": place_type},
+        {"_id": 0}
+    ).sort("created_at", -1).skip(skip).limit(limit)
+    
+    reviews = await cursor.to_list(length=limit)
+    total = await db.reviews.count_documents({"place_id": place_id, "place_type": place_type})
+    
+    # Calculate average rating
+    pipeline = [
+        {"$match": {"place_id": place_id, "place_type": place_type}},
+        {"$group": {"_id": None, "avg_rating": {"$avg": "$rating"}, "count": {"$sum": 1}}}
+    ]
+    stats = await db.reviews.aggregate(pipeline).to_list(length=1)
+    avg_rating = stats[0]["avg_rating"] if stats else 0
+    review_count = stats[0]["count"] if stats else 0
+    
+    return {
+        "reviews": reviews,
+        "total": total,
+        "avg_rating": round(avg_rating, 1) if avg_rating else 0,
+        "review_count": review_count,
+        "page": page,
+        "pages": (total + limit - 1) // limit
+    }
+
+@reviews_router.get("/user/{user_id}")
+async def get_user_reviews(user_id: str, page: int = 1, limit: int = 20):
+    """Get reviews by a user"""
+    skip = (page - 1) * limit
+    
+    cursor = db.reviews.find(
+        {"user_id": user_id},
+        {"_id": 0}
+    ).sort("created_at", -1).skip(skip).limit(limit)
+    
+    reviews = await cursor.to_list(length=limit)
+    total = await db.reviews.count_documents({"user_id": user_id})
+    
+    return {
+        "reviews": reviews,
+        "total": total,
+        "page": page,
+        "pages": (total + limit - 1) // limit
+    }
+
+@reviews_router.delete("/{review_id}")
+async def delete_review(
+    review_id: str,
+    user: User = Depends(get_current_user)
+):
+    """Delete a review (only by owner)"""
+    result = await db.reviews.delete_one({
+        "review_id": review_id,
+        "user_id": user.user_id
+    })
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Review not found or not authorized")
+    
+    return {"message": "Review deleted"}
+
+@reviews_router.post("/{review_id}/helpful")
+async def mark_helpful(review_id: str):
+    """Mark a review as helpful"""
+    result = await db.reviews.update_one(
+        {"review_id": review_id},
+        {"$inc": {"helpful_count": 1}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Review not found")
+    
+    return {"message": "Marked as helpful"}
+
 # ============== ROOT ROUTES ==============
 
 @api_router.get("/")
@@ -1052,6 +1189,7 @@ app.include_router(auth_router)
 app.include_router(places_router)
 app.include_router(user_router)
 app.include_router(cannabis_router)
+app.include_router(reviews_router)
 
 # CORS middleware
 app.add_middleware(
