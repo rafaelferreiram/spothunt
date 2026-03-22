@@ -1,0 +1,184 @@
+{
+  "identity": {
+    "name": "E1",
+    "role": "Anti-AI Creative Designer",
+    "mission": "Create a hyperlocal discovery app that feels human, organic, and expertly curated, avoiding generic SaaS aesthetics.",
+    "principles": [
+      "Fusion over Imitation: Mix Organic Nature with Urban Modernism.",
+      "Emotion First: Every screen must evoke the feeling of 'Discovery'.",
+      "Content is King: Photos are the heroes; text is the guide.",
+      "Zoom In: Use bold close-ups for food and textures.",
+      "Negative Space: Use whitespace to create breathing room."
+    ],
+    "anti_patterns": [
+      "No generic 'Inter' font for headings.",
+      "No default 'Bootstrap' grids.",
+      "No pure black (#000000) or pure white (#FFFFFF).",
+      "No generic 'blue' primary buttons."
+    ]
+  },
+  "theme": {
+    "name": "Organic Urban",
+    "mode": "system",
+    "colors": {
+      "light": {
+        "background": "#F2F0E9",
+        "foreground": "#1A4D2E",
+        "card": "#FFFFFF",
+        "card_foreground": "#1A4D2E",
+        "primary": "#1A4D2E",
+        "primary_foreground": "#F2F0E9",
+        "secondary": "#E8E6df",
+        "secondary_foreground": "#1A4D2E",
+        "accent": "#FF6B35",
+        "accent_foreground": "#FFFFFF",
+        "muted": "#E2E0D9",
+        "muted_foreground": "#5C6B5F",
+        "border": "#D6D4CD"
+      },
+      "dark": {
+        "background": "#1C1C1E",
+        "foreground": "#E6E6E6",
+        "card": "#2C2C2E",
+        "card_foreground": "#E6E6E6",
+        "primary": "#E6E6E6",
+        "primary_foreground": "#1C1C1E",
+        "secondary": "#2C2C2E",
+        "secondary_foreground": "#E6E6E6",
+        "accent": "#FF9F1C",
+        "accent_foreground": "#1C1C1E",
+        "muted": "#2C2C2E",
+        "muted_foreground": "#A1A1AA",
+        "border": "#3A3A3C"
+      }
+    },
+    "typography": {
+      "headings": {
+        "family": "Fraunces",
+        "weights": ["300", "400", "600"],
+        "url": "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;400;600&display=swap"
+      },
+      "body": {
+        "family": "Plus Jakarta Sans",
+        "weights": ["400", "500", "700"],
+        "url": "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700&display=swap"
+      }
+    },
+    "radius": "1rem"
+  },
+  "components": {
+    "BottomNav": {
+      "style": "floating-glass",
+      "specs": "Fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-white/10 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-full shadow-2xl p-2 flex justify-around items-center z-50",
+      "icons": "Lucide React (Home, Map, Heart, User)"
+    },
+    "FeedCard": {
+      "style": "bento-card",
+      "specs": "rounded-3xl overflow-hidden relative group transition-all duration-300 hover:scale-[1.02] shadow-sm hover:shadow-xl",
+      "overlay": "bg-gradient-to-t from-black/80 via-black/20 to-transparent absolute inset-0 z-10"
+    },
+    "MapMarker": {
+      "style": "pill-marker",
+      "specs": "bg-white dark:bg-zinc-900 text-sm font-bold px-3 py-1 rounded-full shadow-lg border-2 border-primary transform transition-transform hover:scale-110 flex items-center gap-1"
+    }
+  },
+  "image_assets": {
+    "hero_places": [
+      {
+        "url": "https://images.unsplash.com/photo-1760216573084-d33bbba26076?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjd8MHwxfHNlYXJjaHw0fHx1cmJhbiUyMGFlc3RoZXRpYyUyMHRyYXZlbCUyMGRlc3RpbmF0aW9uc3xlbnwwfHx8fDE3NzQyMjExODN8MA&ixlib=rb-4.1.0&q=85",
+        "category": "urban_hero",
+        "description": "Modern building against a mountain backdrop"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1761773850230-74b63b8dd021?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjd8MHwxfHNlYXJjaHwzfHx1cmJhbiUyMGFlc3RoZXRpYyUyMHRyYXZlbCUyMGRlc3RpbmF0aW9uc3xlbnwwfHx8fDE3NzQyMjExODN8MA&ixlib=rb-4.1.0&q=85",
+        "category": "urban_hero",
+        "description": "Modern curved building with balconies by the water"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1761501989065-7c98a5d1f773?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjd8MHwxfHNlYXJjaHwyfHx1cmJhbiUyMGFlc3RoZXRpYyUyMHRyYXZlbCUyMGRlc3RpbmF0aW9uc3xlbnwwfHx8fDE3NzQyMjExODN8MA&ixlib=rb-4.1.0&q=85",
+        "category": "interior",
+        "description": "Modern building interior with wood accents and plants"
+      }
+    ],
+    "food_drink": [
+       {
+        "url": "https://images.unsplash.com/photo-1719520670204-dbe1903a789f?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxOTJ8MHwxfHNlYXJjaHwxfHxhZXN0aGV0aWMlMjBmb29kJTIwYW5kJTIwZHJpbmslMjBwbGF0aW5nfGVufDB8fHx8MTc3NDIyMTE4NXww&ixlib=rb-4.1.0&q=85",
+        "category": "food",
+        "description": "A white plate topped with a piece of toast covered in avocado"
+       },
+       {
+        "url": "https://images.pexels.com/photos/7664390/pexels-photo-7664390.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "category": "food",
+        "description": "Aesthetic display of toast adorned with pink flowers on pastel settings"
+       },
+       {
+        "url": "https://images.pexels.com/photos/7664403/pexels-photo-7664403.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "category": "food",
+        "description": "Aesthetic breakfast setup featuring bread with red caviar"
+       }
+    ],
+    "interiors": [
+       {
+        "url": "https://images.unsplash.com/photo-1769987030159-bba5626103f7?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzZ8MHwxfHNlYXJjaHwxfHxpbnRlcmlvciUyMGRlc2lnbiUyMGNvZmZlZSUyMHNob3AlMjBiYXJ8ZW58MHx8fHwxNzc0MjIxMTg3fDA&ixlib=rb-4.1.0&q=85",
+        "category": "cafe",
+        "description": "Modern cafe seating area with pillows and counter"
+       },
+       {
+        "url": "https://images.pexels.com/photos/5812847/pexels-photo-5812847.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "category": "cafe",
+        "description": "Warm rustic coffee shop"
+       }
+    ],
+    "people": [
+      {
+        "url": "https://images.unsplash.com/photo-1679466061812-211a6b737175?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAxODF8MHwxfHNlYXJjaHwzfHxtb2Rlcm4lMjBmb29kJTIwYW5kJTIwZHJpbmslMjBwbGF0aW5nfGVufDB8fHx8MTc3NDIyMTE4Nnww&ixlib=rb-4.1.0&q=85",
+        "category": "avatar",
+        "description": "woman with a necklace"
+      },
+      {
+         "url": "https://images.unsplash.com/photo-1567187979900-65e3b7b050a9?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAxODF8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBkaXZlcnNlJTIwcG9ydHJhaXRzfGVufDB8fHx8MTc3NDIyMTE4Nnww&ixlib=rb-4.1.0&q=85",
+         "description": "man looking at portraits",
+         "category": "avatar"
+      }
+    ]
+  },
+  "implementation_steps": [
+    {
+      "step": 1,
+      "description": "Install Fonts",
+      "action": "Add Google Fonts link for Fraunces and Plus Jakarta Sans to index.html."
+    },
+    {
+      "step": 2,
+      "description": "Configure Tailwind",
+      "action": "Update tailwind.config.js with the 'Organic Urban' color palette and font families."
+    },
+    {
+      "step": 3,
+      "description": "Global Styles",
+      "action": "Update index.css to set base font sizes and smooth scrolling (lenis recommended if possible, otherwise scroll-behavior: smooth)."
+    },
+    {
+      "step": 4,
+      "description": "Navigation Component",
+      "action": "Create the floating bottom navigation using the 'Floating Glass' style."
+    },
+    {
+      "step": 5,
+      "description": "Map View",
+      "action": "Implement Leaflet map with custom markers. Use 'react-leaflet'. Hide default zoom controls. Add custom controls."
+    },
+    {
+      "step": 6,
+      "description": "Feed View",
+      "action": "Create a 'Bento Grid' layout for the home feed using the 'hero_places', 'food_drink', and 'interiors' images."
+    }
+  ],
+  "universal_guidelines": [
+    "Do not use generic 'Inter' font.",
+    "Do not use 'blue' as primary color.",
+    "Use generous padding (p-6, p-8).",
+    "Ensure dark mode text contrast is accessible (gray-200, not gray-400).",
+    "All interactive elements must have data-testid attributes."
+  ]
+}
