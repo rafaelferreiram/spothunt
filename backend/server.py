@@ -20,7 +20,8 @@ from google_places import (
     reverse_geocode,
     calculate_distance,
     calculate_walk_time,
-    calculate_drive_time
+    calculate_drive_time,
+    enrich_places_with_travel_times
 )
 
 ROOT_DIR = Path(__file__).parent
@@ -751,6 +752,7 @@ async def get_places(
     max_distance: Optional[int] = None,
     search: Optional[str] = None,
     use_google: bool = True,
+    include_travel_times: bool = True,
     request: Request = None
 ):
     """Get places with optional filters - uses Google Places API or mock data"""
@@ -777,6 +779,10 @@ async def get_places(
             places = google_result.get("places", [])
             
             if places:
+                # Enrich with actual travel times from Distance Matrix API
+                if include_travel_times:
+                    places = await enrich_places_with_travel_times(places, lat, lng)
+                
                 # Add personalized match scores
                 for place in places:
                     if taste_profile:
@@ -836,6 +842,7 @@ async def get_nearby_places_google(
     radius: int = 2000,
     keyword: Optional[str] = None,
     open_now: bool = False,
+    include_travel_times: bool = True,
     request: Request = None
 ):
     """Get nearby places using Google Places API only"""
@@ -859,6 +866,10 @@ async def get_nearby_places_google(
     )
     
     places = result.get("places", [])
+    
+    # Enrich with actual travel times from Distance Matrix API
+    if include_travel_times and places:
+        places = await enrich_places_with_travel_times(places, lat, lng)
     
     # Add personalized match scores
     for place in places:

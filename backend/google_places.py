@@ -1,6 +1,7 @@
 """
 Google Places API Integration Service
 Fetches real nearby places based on user location
+Includes Distance Matrix API for accurate travel times
 """
 import httpx
 import os
@@ -12,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 PLACES_BASE_URL = "https://maps.googleapis.com/maps/api/place"
 GEOCODE_BASE_URL = "https://maps.googleapis.com/maps/api/geocode"
+DISTANCE_MATRIX_URL = "https://maps.googleapis.com/maps/api/distancematrix/json"
 
 def get_api_key():
     """Get Google API key at runtime"""
@@ -405,3 +407,133 @@ def calculate_walk_time(distance_m: float) -> int:
 def calculate_drive_time(distance_m: float) -> int:
     """Calculate driving time in minutes (400m/min in city)"""
     return max(1, round(distance_m / 400))
+
+
+
+async def get_distance_matrix(
+    origin_lat: float,
+    origin_lng: float,
+    destinations: List[Dict[str, Any]],
+    mode: str = "walking"  # "walking" or "driving"
+) -> Dict[str, Dict[str, int]]:
+    """
+    Get actual travel times and distances using Google Distance Matrix API.
+    Returns dict mapping place_id to {distance_m, duration_mins}.
+    
+    Args:
+        origin_lat: User's latitude
+        origin_lng: User's longitude  
+        destinations: List of places with coordinates and id
+        mode: "walking" or "driving"
+    """
+    api_key = get_api_key()
+    if not api_key or not destinations:
+        return {}
+    
+    # Limit destinations to avoid API limits (max 25 destinations per request)
+    destinations = destinations[:25]
+    
+    # Format destinations as pipe-separated lat,lng pairs
+    dest_coords = "|".join([
+        f"{d['coordinates']['lat']},{d['coordinates']['lng']}" 
+        for d in destinations 
+        if d.get('coordinates')
+    ])
+    
+    if not dest_coords:
+        return {}
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                DISTANCE_MATRIX_URL,
+                params={
+                    "origins": f"{origin_lat},{origin_lng}",
+                    "destinations": dest_coords,
+                    "mode": mode,
+                    "key": api_key,
+                },
+                timeout=15.0
+            )
+            data = response.json()
+            
+            if data.get("status") != "OK":
+                logger.error(f"Distance Matrix error: {data.get('status')} - {data.get('error_message', '')}")
+                return {}
+            
+            results = {}
+            elements = data.get("rows", [{}])[0].get("elements", [])
+            
+            for i, element in enumerate(elements):
+                if i >= len(destinations):
+                    break
+                    
+                place_id = destinations[i].get("id") or destinations[i].get("google_place_id")
+                if not place_id:
+                    continue
+                
+                if element.get("status") == "OK":
+                    distance = element.get("distance", {})
+                    duration = element.get("duration", {})
+                    
+                    results[place_id] = {
+                        "distance_m": distance.get("value", 0),
+                        "duration_mins": round(duration.get("value", 0) / 60),
+                        "distance_text": distance.get("text", ""),
+                        "duration_text": duration.get("text", "")
+                    }
+            
+            return results
+            
+    except Exception as e:
+        logger.error(f"Distance Matrix request error: {e}")
+        return {}
+
+
+async def enrich_places_with_travel_times(
+    places: List[Dict[str, Any]],
+    user_lat: float,
+    user_lng: float
+) -> List[Dict[str, Any]]:
+    """
+    Enrich places with actual walking and driving times from Distance Matrix API.
+    Falls back to estimated times if API fails.
+    """
+    if not places:
+        return places
+    
+    try:
+        # Get walking times
+        walk_results = await get_distance_matrix(
+            user_lat, user_lng, places, mode="walking"
+        )
+        
+        # Get driving times
+        drive_results = await get_distance_matrix(
+            user_lat, user_lng, places, mode="driving"
+        )
+        
+        # Enrich places with actual travel times
+        for place in places:
+            place_id = place.get("id") or place.get("google_place_id")
+            
+            # Walking data
+            if place_id and place_id in walk_results:
+                walk_data = walk_results[place_id]
+                place["walk_mins"] = walk_data["duration_mins"]
+                place["walk_text"] = walk_data.get("duration_text", "")
+                # Update distance with walking distance (more accurate for short trips)
+                if walk_data["distance_m"] > 0:
+                    place["distance_m"] = walk_data["distance_m"]
+            
+            # Driving data  
+            if place_id and place_id in drive_results:
+                drive_data = drive_results[place_id]
+                place["drive_mins"] = drive_data["duration_mins"]
+                place["drive_text"] = drive_data.get("duration_text", "")
+        
+        return places
+        
+    except Exception as e:
+        logger.error(f"Error enriching travel times: {e}")
+        return places
