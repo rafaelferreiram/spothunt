@@ -1385,7 +1385,7 @@ async def get_dispensaries(
     # If location provided, fetch ALL shops and filter by distance
     if lat and lng:
         # Fetch all shops to calculate distances (shops DB isn't huge)
-        cursor = db.dispensaries.find(query, {"_id": 0})
+        cursor = db.shops.find(query, {"_id": 0})
         all_dispensaries = await cursor.to_list(length=5000)
         
         # Calculate distances
@@ -1415,9 +1415,9 @@ async def get_dispensaries(
     else:
         # No location - just paginate normally
         skip = (page - 1) * limit
-        cursor = db.dispensaries.find(query, {"_id": 0}).skip(skip).limit(limit)
+        cursor = db.shops.find(query, {"_id": 0}).skip(skip).limit(limit)
         dispensaries = await cursor.to_list(length=limit)
-        total = await db.dispensaries.count_documents(query)
+        total = await db.shops.count_documents(query)
     
     return {
         "dispensaries": dispensaries,
@@ -1429,7 +1429,7 @@ async def get_dispensaries(
 @cannabis_router.get("/dispensaries/{shop_id}")
 async def get_dispensary(shop_id: str, lat: Optional[float] = None, lng: Optional[float] = None):
     """Get a single dispensary by ID"""
-    disp = await db.dispensaries.find_one({"shop_id": shop_id}, {"_id": 0})
+    disp = await db.shops.find_one({"shop_id": shop_id}, {"_id": 0})
     if not disp:
         raise HTTPException(status_code=404, detail="Dispensary not found")
     
@@ -1472,19 +1472,22 @@ async def get_flavors():
 async def get_cannabis_stats():
     """Get cannabis database statistics"""
     strain_count = await db.strains.count_documents({})
-    dispensary_count = await db.dispensaries.count_documents({"is_dispensary": True})
+    dispensary_count = await db.shops.count_documents({"is_dispensary": True})
     
     # Count by type
     indica_count = await db.strains.count_documents({"type": {"$regex": "indica", "$options": "i"}})
     sativa_count = await db.strains.count_documents({"type": {"$regex": "sativa", "$options": "i"}})
     hybrid_count = await db.strains.count_documents({"type": {"$regex": "hybrid", "$options": "i"}})
     
-    # Count by country
-    us_count = await db.dispensaries.count_documents({"country": "US", "is_dispensary": True})
-    nl_count = await db.dispensaries.count_documents({"country": "NL", "is_dispensary": True})
-    es_count = await db.dispensaries.count_documents({"country": "ES", "is_dispensary": True})
-    ca_count = await db.dispensaries.count_documents({"country": "CA", "is_dispensary": True})
-    th_count = await db.dispensaries.count_documents({"country": "TH", "is_dispensary": True})
+    # Count by country - aggregate all
+    country_pipeline = [
+        {"$match": {"is_dispensary": True}},
+        {"$group": {"_id": "$country", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 15}
+    ]
+    country_cursor = db.shops.aggregate(country_pipeline)
+    country_stats = {doc["_id"]: doc["count"] for doc in await country_cursor.to_list(length=15)}
     
     return {
         "total_strains": strain_count,
@@ -1494,13 +1497,7 @@ async def get_cannabis_stats():
             "sativa": sativa_count,
             "hybrid": hybrid_count
         },
-        "dispensaries_by_country": {
-            "US": us_count,
-            "Netherlands": nl_count,
-            "Spain": es_count,
-            "Canada": ca_count,
-            "Thailand": th_count
-        }
+        "dispensaries_by_country": country_stats
     }
 
 # ============== STRAIN JOURNAL ROUTES ==============
@@ -1609,6 +1606,101 @@ async def get_journal_stats(
         "average_rating": round(avg_rating, 1) if avg_rating else 0,
         "top_effects": [{"effect": e["_id"], "count": e["count"]} for e in top_effects]
     }
+
+# ============== FAVORITES ROUTES ==============
+
+@cannabis_router.get("/favorites")
+async def get_favorites(
+    user: User = Depends(get_current_user),
+    item_type: Optional[str] = None  # "strain" or "dispensary"
+):
+    """Get user's favorite strains and dispensaries"""
+    query = {"user_id": user.user_id}
+    if item_type:
+        query["item_type"] = item_type
+    
+    cursor = db.cannabis_favorites.find(query, {"_id": 0}).sort("created_at", -1)
+    favorites = await cursor.to_list(length=100)
+    
+    # Get details for each favorite
+    result = {"strains": [], "dispensaries": []}
+    
+    for fav in favorites:
+        if fav["item_type"] == "strain":
+            strain = await db.strains.find_one({"strain_id": fav["item_id"]}, {"_id": 0})
+            if strain:
+                strain["favorite_id"] = fav["favorite_id"]
+                result["strains"].append(strain)
+        else:
+            shop = await db.shops.find_one({"shop_id": fav["item_id"]}, {"_id": 0})
+            if shop:
+                shop["favorite_id"] = fav["favorite_id"]
+                result["dispensaries"].append(shop)
+    
+    return result
+
+@cannabis_router.post("/favorites")
+async def add_favorite(
+    item_id: str,
+    item_type: str,  # "strain" or "dispensary"
+    user: User = Depends(get_current_user)
+):
+    """Add a strain or dispensary to favorites"""
+    # Check if already favorited
+    existing = await db.cannabis_favorites.find_one({
+        "user_id": user.user_id,
+        "item_id": item_id,
+        "item_type": item_type
+    })
+    
+    if existing:
+        return {"message": "Already in favorites", "favorite_id": existing.get("favorite_id")}
+    
+    favorite_id = f"fav_{uuid.uuid4().hex[:12]}"
+    
+    favorite = {
+        "favorite_id": favorite_id,
+        "user_id": user.user_id,
+        "item_id": item_id,
+        "item_type": item_type,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.cannabis_favorites.insert_one(favorite)
+    return {"message": "Added to favorites", "favorite_id": favorite_id}
+
+@cannabis_router.delete("/favorites/{item_id}")
+async def remove_favorite(
+    item_id: str,
+    item_type: str,  # "strain" or "dispensary"
+    user: User = Depends(get_current_user)
+):
+    """Remove a strain or dispensary from favorites"""
+    result = await db.cannabis_favorites.delete_one({
+        "user_id": user.user_id,
+        "item_id": item_id,
+        "item_type": item_type
+    })
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Favorite not found")
+    
+    return {"message": "Removed from favorites"}
+
+@cannabis_router.get("/favorites/check/{item_id}")
+async def check_favorite(
+    item_id: str,
+    item_type: str,
+    user: User = Depends(get_current_user)
+):
+    """Check if an item is in user's favorites"""
+    existing = await db.cannabis_favorites.find_one({
+        "user_id": user.user_id,
+        "item_id": item_id,
+        "item_type": item_type
+    })
+    
+    return {"is_favorite": existing is not None}
 
 # ============== REVIEWS ROUTES ==============
 

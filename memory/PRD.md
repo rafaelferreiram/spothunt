@@ -149,6 +149,16 @@ Build SpotHunt - a hyperlocal discovery app for travelers. A mobile-first discov
   - Notes and location tracking
   - Journal statistics (total entries, unique strains, avg rating, top effects)
   - Delete entries functionality
+- **South America Cannabis Shops**: Added 565 new shops:
+  - 🇧🇷 Brazil: 411 shops (São Paulo, Rio, Brasília, Curitiba, Porto Alegre, etc.)
+  - 🇺🇾 Uruguay: 154 shops (Montevideo, Punta del Este, Colonia, Salto)
+- **Favorites System**: Full favorites functionality with:
+  - Heart icon buttons on strains and dispensaries
+  - "Favs" tab in Weeds section to view saved items
+  - Add/remove favorites with toast notifications
+  - Backend API endpoints for favorites CRUD
+- **Total Cannabis Spots**: 6,595 worldwide (22 countries)
+- **Database Consolidation**: Unified shops collection with all dispensary data
 
 ## Prioritized Backlog
 

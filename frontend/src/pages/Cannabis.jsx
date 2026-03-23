@@ -52,6 +52,8 @@ const Cannabis = () => {
   const [dispensaries, setDispensaries] = useState([]);
   const [journalEntries, setJournalEntries] = useState([]);
   const [journalStats, setJournalStats] = useState(null);
+  const [favorites, setFavorites] = useState({ strains: [], dispensaries: [] });
+  const [favoriteIds, setFavoriteIds] = useState({ strains: new Set(), dispensaries: new Set() });
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState("all");
@@ -187,11 +189,66 @@ const Cannabis = () => {
     }
   };
 
+  const fetchFavorites = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API}/cannabis/favorites`, { credentials: "include" });
+      const data = await res.json();
+      setFavorites(data);
+      
+      // Create sets for quick lookup
+      const strainIds = new Set(data.strains?.map(s => s.strain_id) || []);
+      const dispensaryIds = new Set(data.dispensaries?.map(d => d.shop_id) || []);
+      setFavoriteIds({ strains: strainIds, dispensaries: dispensaryIds });
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  }, []);
+
+  const toggleFavorite = async (itemId, itemType, isFavorite) => {
+    try {
+      if (isFavorite) {
+        await fetch(`${API}/cannabis/favorites/${itemId}?item_type=${itemType}`, {
+          method: "DELETE",
+          credentials: "include"
+        });
+        toast.success("Removed from favorites");
+      } else {
+        await fetch(`${API}/cannabis/favorites?item_id=${itemId}&item_type=${itemType}`, {
+          method: "POST",
+          credentials: "include"
+        });
+        toast.success("Added to favorites");
+      }
+      
+      // Update local state
+      if (itemType === "strain") {
+        const newSet = new Set(favoriteIds.strains);
+        isFavorite ? newSet.delete(itemId) : newSet.add(itemId);
+        setFavoriteIds(prev => ({ ...prev, strains: newSet }));
+      } else {
+        const newSet = new Set(favoriteIds.dispensaries);
+        isFavorite ? newSet.delete(itemId) : newSet.add(itemId);
+        setFavoriteIds(prev => ({ ...prev, dispensaries: newSet }));
+      }
+      
+      // Refresh favorites if on that tab
+      if (activeTab === "favorites") fetchFavorites();
+    } catch (e) {
+      toast.error("Failed to update favorites");
+    }
+  };
+
   useEffect(() => {
     if (activeTab === "strains") fetchStrains();
     else if (activeTab === "dispensaries") fetchDispensaries();
     else if (activeTab === "journal") fetchJournal();
-  }, [activeTab, fetchStrains, fetchDispensaries, fetchJournal]);
+    else if (activeTab === "favorites") fetchFavorites();
+  }, [activeTab, fetchStrains, fetchDispensaries, fetchJournal, fetchFavorites]);
+
+  // Load favorites on mount for heart icons
+  useEffect(() => {
+    fetchFavorites();
+  }, []);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -277,6 +334,18 @@ const Cannabis = () => {
               >
                 <BookOpen className="w-3.5 h-3.5" />
                 Journal
+              </button>
+              <button
+                onClick={() => setActiveTab("favorites")}
+                className={`flex-1 py-2.5 rounded-xl text-xs font-medium transition-all flex items-center justify-center gap-1 ${
+                  activeTab === "favorites" 
+                    ? "bg-foreground text-background" 
+                    : "bg-muted/50 text-muted-foreground"
+                }`}
+                data-testid="favorites-tab"
+              >
+                <Heart className="w-3.5 h-3.5" />
+                Favs
               </button>
             </div>
             
@@ -380,7 +449,13 @@ const Cannabis = () => {
               </div>
             ) : (
               strains.map((strain) => (
-                <StrainRow key={strain.strain_id} strain={strain} onClick={() => navigate(`/strain/${strain.strain_id}`)} />
+                <StrainRow 
+                  key={strain.strain_id} 
+                  strain={strain} 
+                  onClick={() => navigate(`/strain/${strain.strain_id}`)}
+                  isFavorite={favoriteIds.strains.has(strain.strain_id)}
+                  onToggleFavorite={() => toggleFavorite(strain.strain_id, "strain", favoriteIds.strains.has(strain.strain_id))}
+                />
               ))
             )}
           </div>
@@ -397,7 +472,9 @@ const Cannabis = () => {
                   key={d.shop_id} 
                   dispensary={d} 
                   onClick={() => navigate(`/dispensary/${d.shop_id}`)} 
-                  formatDistance={formatDistance} 
+                  formatDistance={formatDistance}
+                  isFavorite={favoriteIds.dispensaries.has(d.shop_id)}
+                  onToggleFavorite={() => toggleFavorite(d.shop_id, "dispensary", favoriteIds.dispensaries.has(d.shop_id))}
                 />
               ))
             ) : (
@@ -406,12 +483,14 @@ const Cannabis = () => {
                   key={d.shop_id} 
                   dispensary={d} 
                   onClick={() => navigate(`/dispensary/${d.shop_id}`)} 
-                  formatDistance={formatDistance} 
+                  formatDistance={formatDistance}
+                  isFavorite={favoriteIds.dispensaries.has(d.shop_id)}
+                  onToggleFavorite={() => toggleFavorite(d.shop_id, "dispensary", favoriteIds.dispensaries.has(d.shop_id))}
                 />
               ))
             )}
           </div>
-        ) : (
+        ) : activeTab === "journal" ? (
           /* Journal Tab Content */
           <div className="space-y-4">
             {/* Stats Row */}
@@ -555,7 +634,61 @@ const Cannabis = () => {
               </div>
             )}
           </div>
-        )}
+        ) : activeTab === "favorites" ? (
+          /* Favorites Tab Content */
+          <div className="space-y-6">
+            {/* Favorite Strains */}
+            <div>
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                Favorite Strains ({favorites.strains?.length || 0})
+              </h3>
+              {favorites.strains?.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-2xl">
+                  <CannabisLeafIcon className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                  <p className="text-sm">No favorite strains yet</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {favorites.strains?.map((strain) => (
+                    <StrainRow 
+                      key={strain.strain_id} 
+                      strain={strain} 
+                      onClick={() => navigate(`/strain/${strain.strain_id}`)}
+                      isFavorite={true}
+                      onToggleFavorite={() => toggleFavorite(strain.strain_id, "strain", true)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Favorite Dispensaries */}
+            <div>
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                Favorite Spots ({favorites.dispensaries?.length || 0})
+              </h3>
+              {favorites.dispensaries?.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-2xl">
+                  <MapPin className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                  <p className="text-sm">No favorite spots yet</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {favorites.dispensaries?.map((d) => (
+                    <DispensaryRow 
+                      key={d.shop_id} 
+                      dispensary={d} 
+                      onClick={() => navigate(`/dispensary/${d.shop_id}`)}
+                      formatDistance={formatDistance}
+                      isFavorite={true}
+                      onToggleFavorite={() => toggleFavorite(d.shop_id, "dispensary", true)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : null}
       </main>
 
       <BottomNav />
@@ -563,7 +696,7 @@ const Cannabis = () => {
   );
 };
 
-const StrainRow = ({ strain, onClick }) => {
+const StrainRow = ({ strain, onClick, isFavorite = false, onToggleFavorite }) => {
   const getTypeStyle = (type) => {
     const t = (type || "").toLowerCase();
     if (t.includes("sativa")) return { bg: "bg-amber-500/10", text: "text-amber-600 dark:text-amber-400", icon: "☀️" };
@@ -596,16 +729,29 @@ const StrainRow = ({ strain, onClick }) => {
             </p>
           )}
         </div>
-        <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+        <div className="flex items-center gap-2">
+          {onToggleFavorite && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleFavorite();
+              }}
+              className="p-2 rounded-lg hover:bg-foreground/10 transition-colors"
+            >
+              <Heart className={`w-4 h-4 ${isFavorite ? "fill-red-500 text-red-500" : "text-muted-foreground"}`} />
+            </button>
+          )}
+          <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+        </div>
       </div>
     </div>
   );
 };
 
 // Feed Card View for Dispensaries (similar to FeedCard)
-const DispensaryFeedCard = ({ dispensary, onClick, formatDistance }) => {
+const DispensaryFeedCard = ({ dispensary, onClick, formatDistance, isFavorite = false, onToggleFavorite }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
-  const flags = { US: "🇺🇸", NL: "🇳🇱", ES: "🇪🇸", CA: "🇨🇦", TH: "🇹🇭", DE: "🇩🇪", PT: "🇵🇹" };
+  const flags = { US: "🇺🇸", NL: "🇳🇱", ES: "🇪🇸", CA: "🇨🇦", TH: "🇹🇭", DE: "🇩🇪", PT: "🇵🇹", BR: "🇧🇷", UY: "🇺🇾" };
   
   // Generate a consistent image based on the dispensary name for variety
   const getImage = () => {
@@ -713,22 +859,35 @@ const DispensaryFeedCard = ({ dispensary, onClick, formatDistance }) => {
           )}
         </div>
         
-        <button
-          onClick={handleMaps}
-          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-foreground/5 hover:bg-foreground/10 text-xs font-medium transition-colors"
-          data-testid={`maps-btn-${dispensary.shop_id}`}
-        >
-          <Navigation className="w-3.5 h-3.5" />
-          <span>Directions</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {onToggleFavorite && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleFavorite();
+              }}
+              className="flex items-center justify-center w-8 h-8 rounded-full bg-foreground/5 hover:bg-foreground/10 transition-colors"
+            >
+              <Heart className={`w-4 h-4 ${isFavorite ? "fill-red-500 text-red-500" : "text-muted-foreground"}`} />
+            </button>
+          )}
+          <button
+            onClick={handleMaps}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-foreground/5 hover:bg-foreground/10 text-xs font-medium transition-colors"
+            data-testid={`maps-btn-${dispensary.shop_id}`}
+          >
+            <Navigation className="w-3.5 h-3.5" />
+            <span>Directions</span>
+          </button>
+        </div>
       </div>
     </div>
   );
 };
 
 // List Row View for Dispensaries (original)
-const DispensaryRow = ({ dispensary, onClick, formatDistance }) => {
-  const flags = { US: "🇺🇸", NL: "🇳🇱", ES: "🇪🇸", CA: "🇨🇦", TH: "🇹🇭", DE: "🇩🇪", PT: "🇵🇹" };
+const DispensaryRow = ({ dispensary, onClick, formatDistance, isFavorite = false, onToggleFavorite }) => {
+  const flags = { US: "🇺🇸", NL: "🇳🇱", ES: "🇪🇸", CA: "🇨🇦", TH: "🇹🇭", DE: "🇩🇪", PT: "🇵🇹", BR: "🇧🇷", UY: "🇺🇾" };
   
   return (
     <div
@@ -752,7 +911,20 @@ const DispensaryRow = ({ dispensary, onClick, formatDistance }) => {
             )}
           </div>
         </div>
-        <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+        <div className="flex items-center gap-2">
+          {onToggleFavorite && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleFavorite();
+              }}
+              className="p-2 rounded-lg hover:bg-foreground/10 transition-colors"
+            >
+              <Heart className={`w-4 h-4 ${isFavorite ? "fill-red-500 text-red-500" : "text-muted-foreground"}`} />
+            </button>
+          )}
+          <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+        </div>
       </div>
     </div>
   );
