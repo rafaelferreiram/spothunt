@@ -135,6 +135,8 @@ Build CityBlend - a hyperlocal discovery app for travelers. A mobile-first disco
 - **Enhanced Landing Page**: Feature showcase section with 4 feature cards (Shuffle, Filters, Visit, Day Planner)
 - **Stats Section**: Displays "6,000+ Dispensaries", "Real Google Reviews", "Live Travel Times"
 - **Improved Onboarding**: Better visual preview of app capabilities for new users
+- **Spots Feed View**: Cannabis dispensaries now display as feed cards (like For You page) with image, location, rating, distance
+- **View Toggle**: Added Feed/List view toggle for Spots tab - users can switch between card view and compact list
 
 ## Prioritized Backlog
 

@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { API } from "@/App";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import BottomNav from "@/components/BottomNav";
 import {
@@ -11,24 +10,25 @@ import {
   X,
   Star,
   ChevronRight,
-  Leaf,
-  Sun,
-  Moon
+  LayoutGrid,
+  List,
+  Navigation,
+  Footprints,
+  Car,
+  Heart,
+  ExternalLink
 } from "lucide-react";
 
-// Cannabis leaf SVG icon
+// Cannabis leaf SVG icon - 7-leaflet design
 const CannabisLeafIcon = ({ className }) => (
-  <svg 
-    viewBox="0 0 24 24" 
-    fill="currentColor" 
-    className={className}
-  >
-    <path d="M12 2C12 2 9 7 12 12C15 7 12 2 12 2Z" />
-    <path d="M12 12C9.5 8 6 6 6 6C8 10 12 12 12 12Z" />
-    <path d="M12 12C14.5 8 18 6 18 6C16 10 12 12 12 12Z" />
-    <path d="M12 12C7 9 2 10 2 10C5 11 9 11 12 12Z" />
-    <path d="M12 12C17 9 22 10 22 10C19 11 15 11 12 12Z" />
-    <path d="M12 12V22" stroke="currentColor" strokeWidth="2" fill="none" />
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path d="M12 2C12 2 10 5 10 8C10 10 11 12 12 13C13 12 14 10 14 8C14 5 12 2 12 2Z" />
+    <path d="M12 13C12 13 8 11 6 7C6 7 8 9 10 11C11 12 12 13 12 13Z" />
+    <path d="M12 13C12 13 16 11 18 7C18 7 16 9 14 11C13 12 12 13 12 13Z" />
+    <path d="M12 14C12 14 7 12 4 10C4 10 7 11 10 12C11 13 12 14 12 14Z" />
+    <path d="M12 14C12 14 17 12 20 10C20 10 17 11 14 12C13 13 12 14 12 14Z" />
+    <path d="M12 14.5C12 14.5 9 14 6 13C6 13 9 13.5 11 14C11.5 14.2 12 14.5 12 14.5Z" />
+    <path d="M12 14.5C12 14.5 15 14 18 13C18 13 15 13.5 13 14C12.5 14.2 12 14.5 12 14.5Z" />
   </svg>
 );
 
@@ -45,6 +45,7 @@ const Cannabis = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "strains");
+  const [viewMode, setViewMode] = useState("feed"); // "feed" or "list"
   const [strains, setStrains] = useState([]);
   const [dispensaries, setDispensaries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -152,30 +153,62 @@ const Cannabis = () => {
             )}
           </div>
 
-          {/* Tab Toggle */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => setActiveTab("strains")}
-              className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all ${
-                activeTab === "strains" 
-                  ? "bg-foreground text-background" 
-                  : "bg-muted/50 text-muted-foreground"
-              }`}
-              data-testid="strains-tab"
-            >
-              Strains
-            </button>
-            <button
-              onClick={() => setActiveTab("dispensaries")}
-              className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all ${
-                activeTab === "dispensaries" 
-                  ? "bg-foreground text-background" 
-                  : "bg-muted/50 text-muted-foreground"
-              }`}
-              data-testid="dispensaries-tab"
-            >
-              Spots
-            </button>
+          {/* Tab Toggle with View Mode */}
+          <div className="flex items-center gap-2">
+            <div className="flex flex-1 gap-2">
+              <button
+                onClick={() => setActiveTab("strains")}
+                className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all ${
+                  activeTab === "strains" 
+                    ? "bg-foreground text-background" 
+                    : "bg-muted/50 text-muted-foreground"
+                }`}
+                data-testid="strains-tab"
+              >
+                Strains
+              </button>
+              <button
+                onClick={() => setActiveTab("dispensaries")}
+                className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all ${
+                  activeTab === "dispensaries" 
+                    ? "bg-foreground text-background" 
+                    : "bg-muted/50 text-muted-foreground"
+                }`}
+                data-testid="dispensaries-tab"
+              >
+                Spots
+              </button>
+            </div>
+            
+            {/* View Mode Toggle - Only for Spots */}
+            {activeTab === "dispensaries" && (
+              <div className="flex items-center bg-muted/50 rounded-xl p-1">
+                <button
+                  onClick={() => setViewMode("feed")}
+                  className={`p-2 rounded-lg transition-all ${
+                    viewMode === "feed" 
+                      ? "bg-background shadow-sm" 
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  data-testid="view-feed"
+                  title="Feed view"
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={`p-2 rounded-lg transition-all ${
+                    viewMode === "list" 
+                      ? "bg-background shadow-sm" 
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  data-testid="view-list"
+                  title="List view"
+                >
+                  <List className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -235,14 +268,14 @@ const Cannabis = () => {
         {loading ? (
           <div className="space-y-3">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-20 rounded-2xl bg-muted/30 animate-pulse" />
+              <div key={i} className={`${viewMode === "feed" && activeTab === "dispensaries" ? "h-72" : "h-20"} rounded-2xl bg-muted/30 animate-pulse`} />
             ))}
           </div>
         ) : activeTab === "strains" ? (
           <div className="space-y-2">
             {strains.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground">
-                <p className="text-4xl mb-4">🍃</p>
+                <CannabisLeafIcon className="w-12 h-12 mx-auto mb-4 opacity-30" />
                 <p>No strains found</p>
               </div>
             ) : (
@@ -252,15 +285,29 @@ const Cannabis = () => {
             )}
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className={viewMode === "feed" ? "space-y-4" : "space-y-2"}>
             {dispensaries.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground">
-                <p className="text-4xl mb-4">📍</p>
+                <MapPin className="w-12 h-12 mx-auto mb-4 opacity-30" />
                 <p>No spots found</p>
               </div>
+            ) : viewMode === "feed" ? (
+              dispensaries.map((d) => (
+                <DispensaryFeedCard 
+                  key={d.shop_id} 
+                  dispensary={d} 
+                  onClick={() => navigate(`/dispensary/${d.shop_id}`)} 
+                  formatDistance={formatDistance} 
+                />
+              ))
             ) : (
               dispensaries.map((d) => (
-                <DispensaryRow key={d.shop_id} dispensary={d} onClick={() => navigate(`/dispensary/${d.shop_id}`)} formatDistance={formatDistance} />
+                <DispensaryRow 
+                  key={d.shop_id} 
+                  dispensary={d} 
+                  onClick={() => navigate(`/dispensary/${d.shop_id}`)} 
+                  formatDistance={formatDistance} 
+                />
               ))
             )}
           </div>
@@ -282,7 +329,6 @@ const StrainRow = ({ strain, onClick }) => {
   
   const style = getTypeStyle(strain.type);
   const effects = (strain.effects || []).filter(e => e && e !== "NULL");
-  const flavors = (strain.flavors || []).filter(f => f && f !== "NULL");
 
   return (
     <div
@@ -312,6 +358,131 @@ const StrainRow = ({ strain, onClick }) => {
   );
 };
 
+// Feed Card View for Dispensaries (similar to FeedCard)
+const DispensaryFeedCard = ({ dispensary, onClick, formatDistance }) => {
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const flags = { US: "🇺🇸", NL: "🇳🇱", ES: "🇪🇸", CA: "🇨🇦", TH: "🇹🇭", DE: "🇩🇪", PT: "🇵🇹" };
+  
+  // Generate a consistent image based on the dispensary name for variety
+  const getImage = () => {
+    const images = [
+      "https://images.unsplash.com/photo-1616690710400-a16d146927c5?w=800&q=80", // Cannabis store
+      "https://images.unsplash.com/photo-1603909223429-69bb7101f420?w=800&q=80", // Cannabis buds
+      "https://images.unsplash.com/photo-1585063560370-1519bcea7882?w=800&q=80", // Cannabis plant
+      "https://images.unsplash.com/photo-1536819114556-1e10f967fb61?w=800&q=80", // Dispensary interior
+      "https://images.unsplash.com/photo-1587404105811-d33b1bb2a87b?w=800&q=80", // Cannabis leaf
+    ];
+    const index = dispensary.name.length % images.length;
+    return images[index];
+  };
+
+  const handleMaps = (e) => {
+    e.stopPropagation();
+    const { lat, lng } = dispensary.coordinates || {};
+    if (lat && lng) {
+      window.open(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`, "_blank");
+    }
+  };
+
+  // Estimate walk/drive times based on distance
+  const walkMins = dispensary.distance_m ? Math.round(dispensary.distance_m / 80) : null;
+  const driveMins = dispensary.distance_m ? Math.round(dispensary.distance_m / 400) : null;
+
+  return (
+    <div
+      onClick={onClick}
+      className="group relative rounded-3xl overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl active:scale-[0.98] bg-card"
+      data-testid={`dispensary-card-${dispensary.shop_id}`}
+    >
+      {/* Image Container */}
+      <div className="relative aspect-[4/3] overflow-hidden">
+        {!imageLoaded && (
+          <div className="absolute inset-0 bg-muted animate-pulse" />
+        )}
+        <img
+          src={getImage()}
+          alt={dispensary.name}
+          className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
+          onLoad={() => setImageLoaded(true)}
+        />
+        
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+        {/* Country Flag Badge */}
+        <div className="absolute top-3 left-3">
+          <span className="px-2.5 py-1 rounded-full bg-white/95 backdrop-blur-sm text-xs font-semibold text-foreground flex items-center gap-1">
+            <span>{flags[dispensary.country] || "📍"}</span>
+            {dispensary.country}
+          </span>
+        </div>
+
+        {/* Content on Image */}
+        <div className="absolute bottom-0 left-0 right-0 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-white text-lg leading-tight truncate">
+                {dispensary.name}
+              </h3>
+              <p className="text-white/70 text-sm mt-0.5 truncate">
+                {dispensary.city}{dispensary.state ? `, ${dispensary.state}` : ""}
+              </p>
+            </div>
+          </div>
+
+          {/* Stats Row */}
+          <div className="flex items-center gap-3 mt-2.5 text-sm text-white/90">
+            {dispensary.rating > 0 && (
+              <span className="flex items-center gap-1">
+                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                <span className="font-medium">{dispensary.rating.toFixed(1)}</span>
+              </span>
+            )}
+            {dispensary.distance_m && (
+              <span className="flex items-center gap-1 text-white/70">
+                <MapPin className="w-3.5 h-3.5" />
+                {formatDistance(dispensary.distance_m)}
+              </span>
+            )}
+            <span className="text-emerald-400 flex items-center gap-1">
+              <CannabisLeafIcon className="w-3.5 h-3.5" />
+              {dispensary.type || "Dispensary"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Info Bar */}
+      <div className="flex items-center justify-between px-4 py-3 bg-card border-t border-border/30">
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          {walkMins && (
+            <span className="flex items-center gap-1.5" title="Walking time">
+              <Footprints className="w-3.5 h-3.5" />
+              <span className="font-medium">{walkMins} min</span>
+            </span>
+          )}
+          {driveMins && (
+            <span className="flex items-center gap-1.5" title="Driving time">
+              <Car className="w-3.5 h-3.5" />
+              <span className="font-medium">{driveMins} min</span>
+            </span>
+          )}
+        </div>
+        
+        <button
+          onClick={handleMaps}
+          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-foreground/5 hover:bg-foreground/10 text-xs font-medium transition-colors"
+          data-testid={`maps-btn-${dispensary.shop_id}`}
+        >
+          <Navigation className="w-3.5 h-3.5" />
+          <span>Directions</span>
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// List Row View for Dispensaries (original)
 const DispensaryRow = ({ dispensary, onClick, formatDistance }) => {
   const flags = { US: "🇺🇸", NL: "🇳🇱", ES: "🇪🇸", CA: "🇨🇦", TH: "🇹🇭", DE: "🇩🇪", PT: "🇵🇹" };
   
