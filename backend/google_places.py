@@ -2,12 +2,16 @@
 Google Places API Integration Service
 Fetches real nearby places based on user location
 Includes Distance Matrix API for accurate travel times
+Uses Google Photos API for real place images with caching
 """
 import httpx
 import os
 from typing import List, Optional, Dict, Any
 import math
 import logging
+import hashlib
+import json
+from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -15,9 +19,37 @@ PLACES_BASE_URL = "https://maps.googleapis.com/maps/api/place"
 GEOCODE_BASE_URL = "https://maps.googleapis.com/maps/api/geocode"
 DISTANCE_MATRIX_URL = "https://maps.googleapis.com/maps/api/distancematrix/json"
 
+# In-memory cache for photo references (reduces API calls)
+# Structure: {place_id: {"photo_refs": [...], "expires": datetime}}
+_photo_cache: Dict[str, Dict] = {}
+CACHE_TTL_HOURS = 24
+
 def get_api_key():
     """Get Google API key at runtime"""
     return os.environ.get('GOOGLE_MAPS_API_KEY', '')
+
+def get_photo_url(photo_reference: str, max_width: int = 800) -> str:
+    """Construct Google Places Photo URL from photo reference"""
+    if not photo_reference or not get_api_key():
+        return ""
+    return f"{PLACES_BASE_URL}/photo?maxwidth={max_width}&photo_reference={photo_reference}&key={get_api_key()}"
+
+def get_cached_photos(place_id: str) -> Optional[List[str]]:
+    """Get cached photo references for a place"""
+    if place_id in _photo_cache:
+        cache_entry = _photo_cache[place_id]
+        if cache_entry["expires"] > datetime.now():
+            return cache_entry["photo_refs"]
+        else:
+            del _photo_cache[place_id]
+    return None
+
+def set_cached_photos(place_id: str, photo_refs: List[str]):
+    """Cache photo references for a place"""
+    _photo_cache[place_id] = {
+        "photo_refs": photo_refs,
+        "expires": datetime.now() + timedelta(hours=CACHE_TTL_HOURS)
+    }
 
 # Category mapping for Google Places types
 CATEGORY_TO_GOOGLE_TYPES = {
@@ -231,6 +263,7 @@ def transform_google_place(result: Dict, user_lat: float, user_lng: float) -> Op
         location = result.get("geometry", {}).get("location", {})
         place_lat = location.get("lat", 0)
         place_lng = location.get("lng", 0)
+        place_id = result.get("place_id", "")
         
         # Calculate distance
         distance_m = calculate_distance(user_lat, user_lng, place_lat, place_lng)
@@ -243,21 +276,38 @@ def transform_google_place(result: Dict, user_lat: float, user_lng: float) -> Op
                 category = GOOGLE_TYPE_TO_CATEGORY[t]
                 break
         
-        # Get photo URL
-        photos = result.get("photos", [])
-        photo_url = None
-        if photos:
-            photo_ref = photos[0].get("photo_reference")
-            if photo_ref:
-                photo_url = f"{PLACES_BASE_URL}/photo?maxwidth=800&photo_reference={photo_ref}&key={get_api_key()}"
+        # Get photo URLs from photo_reference (the correct way)
+        photo_urls = []
+        photos_data = result.get("photos", [])
+        photo_refs = []
+        
+        # Check cache first
+        cached_refs = get_cached_photos(place_id)
+        if cached_refs:
+            photo_refs = cached_refs
+        else:
+            # Extract photo references from API response
+            for photo in photos_data[:3]:  # Get up to 3 photos
+                photo_ref = photo.get("photo_reference")
+                if photo_ref:
+                    photo_refs.append(photo_ref)
+            # Cache the references
+            if photo_refs and place_id:
+                set_cached_photos(place_id, photo_refs)
+        
+        # Build photo URLs from references
+        for photo_ref in photo_refs:
+            photo_url = get_photo_url(photo_ref, 800)
+            if photo_url:
+                photo_urls.append(photo_url)
         
         # Extract neighborhood from vicinity
         vicinity = result.get("vicinity", "")
         neighborhood = vicinity.split(",")[-1].strip() if "," in vicinity else vicinity
         
         return {
-            "id": f"google_{result.get('place_id', '')}",
-            "google_place_id": result.get("place_id"),
+            "id": f"google_{place_id}",
+            "google_place_id": place_id,
             "name": result.get("name", "Unknown"),
             "category": category,
             "subcategories": [t.replace("_", " ") for t in types[:3]],
@@ -270,11 +320,12 @@ def transform_google_place(result: Dict, user_lat: float, user_lng: float) -> Op
             "review_count": result.get("user_ratings_total", 0),
             "price_level": result.get("price_level", 0),
             "is_open": result.get("opening_hours", {}).get("open_now", True),
-            "photos": [photo_url] if photo_url else [],
+            "photos": photo_urls,
+            "photo_references": photo_refs,  # Store refs for frontend use
             "distance_m": round(distance_m),
             "walk_mins": calculate_walk_time(distance_m),
             "drive_mins": calculate_drive_time(distance_m),
-            "maps_deep_link": f"https://www.google.com/maps/place/?q=place_id:{result.get('place_id')}",
+            "maps_deep_link": f"https://www.google.com/maps/place/?q=place_id:{place_id}",
             "uber_deep_link": f"uber://?action=setPickup&pickup=my_location&dropoff[latitude]={place_lat}&dropoff[longitude]={place_lng}&dropoff[nickname]={result.get('name', '').replace(' ', '%20')}",
             "match_score": calculate_base_match_score(result),
         }
@@ -288,15 +339,32 @@ def transform_google_place_details(result: Dict, user_lat: float, user_lng: floa
     location = result.get("geometry", {}).get("location", {})
     place_lat = location.get("lat", 0)
     place_lng = location.get("lng", 0)
+    place_id = result.get("place_id", "")
     
     distance_m = calculate_distance(user_lat, user_lng, place_lat, place_lng) if user_lat and user_lng else 0
     
-    # Get photos
-    photos = []
-    for photo in result.get("photos", [])[:5]:
-        photo_ref = photo.get("photo_reference")
-        if photo_ref:
-            photos.append(f"{PLACES_BASE_URL}/photo?maxwidth=800&photo_reference={photo_ref}&key={get_api_key()}")
+    # Get photos using photo_reference
+    photo_urls = []
+    photo_refs = []
+    
+    # Check cache first
+    cached_refs = get_cached_photos(place_id)
+    if cached_refs:
+        photo_refs = cached_refs
+    else:
+        for photo in result.get("photos", [])[:5]:
+            photo_ref = photo.get("photo_reference")
+            if photo_ref:
+                photo_refs.append(photo_ref)
+        # Cache the references
+        if photo_refs and place_id:
+            set_cached_photos(place_id, photo_refs)
+    
+    # Build photo URLs
+    for photo_ref in photo_refs:
+        photo_url = get_photo_url(photo_ref, 800)
+        if photo_url:
+            photo_urls.append(photo_url)
     
     # Get hours
     hours = {}
@@ -320,8 +388,8 @@ def transform_google_place_details(result: Dict, user_lat: float, user_lng: floa
     neighborhood = result.get("vicinity", "").split(",")[-1].strip() if result.get("vicinity") else ""
     
     return {
-        "id": f"google_{result.get('place_id', '')}",
-        "google_place_id": result.get("place_id"),
+        "id": f"google_{place_id}",
+        "google_place_id": place_id,
         "name": result.get("name", "Unknown"),
         "category": category,
         "subcategories": [t.replace("_", " ") for t in types[:3]],
@@ -338,12 +406,13 @@ def transform_google_place_details(result: Dict, user_lat: float, user_lng: floa
         "closes_at": None,
         "phone": result.get("formatted_phone_number"),
         "website": result.get("website"),
-        "photos": photos,
+        "photos": photo_urls,
+        "photo_references": photo_refs,
         "description": extract_description(result),
         "distance_m": round(distance_m),
         "walk_mins": calculate_walk_time(distance_m),
         "drive_mins": calculate_drive_time(distance_m),
-        "maps_deep_link": f"https://www.google.com/maps/place/?q=place_id:{result.get('place_id')}",
+        "maps_deep_link": f"https://www.google.com/maps/place/?q=place_id:{place_id}",
         "uber_deep_link": f"uber://?action=setPickup&pickup=my_location&dropoff[latitude]={place_lat}&dropoff[longitude]={place_lng}&dropoff[nickname]={result.get('name', '').replace(' ', '%20')}",
         "match_score": calculate_base_match_score(result),
         "google_reviews": [

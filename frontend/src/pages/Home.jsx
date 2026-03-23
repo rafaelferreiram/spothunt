@@ -19,6 +19,7 @@ import {
 import BottomNav from "@/components/BottomNav";
 import FeedCard from "@/components/FeedCard";
 import MapView from "@/components/MapView";
+import LocationEditor from "@/components/LocationEditor";
 import { 
   Search, 
   MapPin, 
@@ -40,7 +41,8 @@ import {
   ArrowUpDown,
   RotateCcw,
   Heart,
-  User
+  User,
+  Navigation
 } from "lucide-react";
 
 const CATEGORIES = [
@@ -119,6 +121,7 @@ const Home = () => {
   const [locationName, setLocationName] = useState("Finding you...");
   const [locationLoading, setLocationLoading] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [isCustomLocation, setIsCustomLocation] = useState(false); // Track if using custom location
 
   // Filters
   const [filters, setFilters] = useState({
@@ -140,7 +143,15 @@ const Home = () => {
     filters.sortBy !== "relevance",
   ].filter(Boolean).length;
 
-  // Get user's actual location
+  // Handle location change from LocationEditor
+  const handleLocationChange = (coords, name) => {
+    setUserLocation(coords);
+    setLocationName(name);
+    setIsCustomLocation(name !== "Current Location");
+    setLocationLoading(false);
+  };
+
+  // Get user's actual location on initial load
   useEffect(() => {
     setLocationLoading(true);
     if (navigator.geolocation) {
@@ -245,21 +256,33 @@ const Home = () => {
         <div className="px-4 pt-4 pb-3 space-y-3">
           {/* Top Row: Location & View Toggle */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                <MapPin className="w-4 h-4 text-primary" />
+            <div className="flex items-center gap-2.5 flex-1 min-w-0">
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
+                isCustomLocation 
+                  ? "bg-gradient-to-br from-amber-500/20 to-amber-500/5" 
+                  : "bg-gradient-to-br from-primary/20 to-primary/5"
+              }`}>
+                {isCustomLocation ? (
+                  <Navigation className="w-4 h-4 text-amber-500" />
+                ) : (
+                  <MapPin className="w-4 h-4 text-primary" />
+                )}
               </div>
-              <div>
-                <p className="font-medium text-sm leading-tight">
-                  {locationLoading ? "Finding you..." : locationName}
-                </p>
-                <p className="text-[11px] text-muted-foreground">
+              <div className="flex-1 min-w-0">
+                <LocationEditor
+                  currentLocation={userLocation}
+                  locationName={locationLoading ? "Finding you..." : locationName}
+                  onLocationChange={handleLocationChange}
+                  className="w-full"
+                />
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {isCustomLocation && <span className="text-amber-500 font-medium mr-1">Visiting</span>}
                   {RADIUS_OPTIONS.find(r => r.value === filters.radius)?.label || "5 km"} radius
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0 ml-2">
               {/* Favorites Button */}
               <button
                 onClick={() => navigate("/favorites")}

@@ -188,9 +188,9 @@ class TestPWASupport:
         data = response.json()
         
         # Verify required PWA fields
-        assert data.get("name") == "CityBlend"
-        assert data.get("short_name") == "CityBlend"
-        assert data.get("display") == "standalone"
+        assert data.get("name") == "SpotHunt"
+        assert data.get("short_name") == "SpotHunt"
+        assert data.get("display") == "fullscreen"
         assert "icons" in data
         assert len(data["icons"]) >= 2
         print(f"✓ PWA manifest loads correctly with name: {data['name']}")

@@ -8,7 +8,7 @@ import logging
 import httpx
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
-from typing import List, Optional
+from typing import List, Optional, Dict
 import uuid
 from datetime import datetime, timezone, timedelta
 import math
@@ -1179,7 +1179,6 @@ async def search_city(query: str):
                 params={
                     "address": query,
                     "key": api_key,
-                    "result_type": "locality|administrative_area_level_1|administrative_area_level_2"
                 }
             )
             data = response.json()
@@ -1211,13 +1210,68 @@ async def search_city(query: str):
                     "country": country_name,
                     "lat": location.get("lat"),
                     "lng": location.get("lng"),
-                    "formatted_address": result.get("formatted_address")
+                    "formatted": result.get("formatted_address")
                 })
             
             return {"results": results}
     except Exception as e:
         logger.error(f"City search error: {e}")
         return {"results": []}
+
+@places_router.get("/reverse-geocode")
+async def reverse_geocode(lat: float, lng: float):
+    """Reverse geocode coordinates to get city name"""
+    api_key = os.environ.get('GOOGLE_MAPS_API_KEY')
+    if not api_key:
+        raise HTTPException(status_code=503, detail="Google API not configured")
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                "https://maps.googleapis.com/maps/api/geocode/json",
+                params={
+                    "latlng": f"{lat},{lng}",
+                    "key": api_key,
+                    "result_type": "locality|administrative_area_level_1|neighborhood"
+                }
+            )
+            data = response.json()
+            
+            if data.get("status") != "OK":
+                return {"city": "Unknown Location", "formatted_address": ""}
+            
+            result = data.get("results", [{}])[0]
+            
+            # Extract location info
+            city = ""
+            neighborhood = ""
+            country = ""
+            state = ""
+            
+            for component in result.get("address_components", []):
+                types = component.get("types", [])
+                if "locality" in types:
+                    city = component.get("long_name")
+                elif "neighborhood" in types:
+                    neighborhood = component.get("long_name")
+                elif "administrative_area_level_1" in types:
+                    state = component.get("short_name")
+                elif "country" in types:
+                    country = component.get("short_name")
+            
+            display_name = city or neighborhood or state or "Current Location"
+            
+            return {
+                "city": city,
+                "neighborhood": neighborhood,
+                "state": state,
+                "country": country,
+                "display_name": display_name,
+                "formatted_address": result.get("formatted_address", "")
+            }
+    except Exception as e:
+        logger.error(f"Reverse geocode error: {e}")
+        return {"city": "Unknown Location", "formatted_address": ""}
 
 @places_router.get("/{place_id}")
 async def get_place(place_id: str, lat: float = 40.7128, lng: float = -74.0060, request: Request = None):
@@ -1362,7 +1416,8 @@ async def get_dispensaries(
     search: Optional[str] = None,
     max_distance: Optional[int] = 50000,  # meters (50km default)
     page: int = 1,
-    limit: int = 20
+    limit: int = 20,
+    fetch_photos: bool = True  # Whether to fetch real Google Photos
 ):
     """Get dispensaries with location and filters"""
     query = {"is_dispensary": True}
@@ -1402,10 +1457,6 @@ async def get_dispensaries(
                 disp["maps_deep_link"] = f"https://www.google.com/maps/search/?api=1&query={coords['lat']},{coords['lng']}"
             else:
                 disp["distance_m"] = float("inf")
-            
-            # Generate Google Street View photo URL
-            if api_key and coords.get("lat") and coords.get("lng"):
-                disp["static_map_url"] = f"https://maps.googleapis.com/maps/api/streetview?size=800x600&location={coords['lat']},{coords['lng']}&fov=90&heading=235&pitch=10&key={api_key}"
         
         # Sort by distance
         all_dispensaries.sort(key=lambda x: x.get("distance_m", float("inf")))
@@ -1425,12 +1476,124 @@ async def get_dispensaries(
         dispensaries = await cursor.to_list(length=limit)
         total = await db.shops.count_documents(query)
     
+    # Fetch real Google photos for dispensaries that have google_place_id
+    if fetch_photos and api_key:
+        for disp in dispensaries:
+            google_place_id = disp.get("google_place_id")
+            coords = disp.get("coordinates", {})
+            
+            if google_place_id:
+                # Try to get photos from Google Place Details
+                photos = await fetch_place_photos(google_place_id)
+                if photos:
+                    disp["photos"] = photos
+                    continue
+            
+            # Fallback: Search for the dispensary by name and location to get photos
+            if not disp.get("photos") and coords.get("lat") and coords.get("lng"):
+                name = disp.get("name", "")
+                if name:
+                    search_result = await search_place_for_photos(
+                        name, 
+                        coords["lat"], 
+                        coords["lng"]
+                    )
+                    if search_result:
+                        disp["photos"] = search_result.get("photos", [])
+                        # Cache the google_place_id for future requests
+                        if search_result.get("place_id"):
+                            disp["google_place_id"] = search_result["place_id"]
+                            # Update DB with google_place_id for caching
+                            await db.shops.update_one(
+                                {"shop_id": disp.get("shop_id")},
+                                {"$set": {"google_place_id": search_result["place_id"]}}
+                            )
+    
     return {
         "dispensaries": dispensaries,
         "total": total,
         "page": page,
         "pages": (total + limit - 1) // limit
     }
+
+async def fetch_place_photos(google_place_id: str, max_photos: int = 3) -> List[str]:
+    """Fetch photos for a place using Google Place Details API"""
+    api_key = os.environ.get('GOOGLE_MAPS_API_KEY')
+    if not api_key or not google_place_id:
+        return []
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                "https://maps.googleapis.com/maps/api/place/details/json",
+                params={
+                    "place_id": google_place_id,
+                    "fields": "photos",
+                    "key": api_key
+                },
+                timeout=10.0
+            )
+            data = response.json()
+            
+            if data.get("status") != "OK":
+                return []
+            
+            photos = []
+            for photo in data.get("result", {}).get("photos", [])[:max_photos]:
+                photo_ref = photo.get("photo_reference")
+                if photo_ref:
+                    photo_url = f"https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference={photo_ref}&key={api_key}"
+                    photos.append(photo_url)
+            
+            return photos
+    except Exception as e:
+        logger.error(f"Error fetching place photos: {e}")
+        return []
+
+async def search_place_for_photos(name: str, lat: float, lng: float) -> Optional[Dict]:
+    """Search for a place by name and location to get its photos"""
+    api_key = os.environ.get('GOOGLE_MAPS_API_KEY')
+    if not api_key:
+        return None
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            # Use findplacefromtext for better accuracy
+            response = await client.get(
+                "https://maps.googleapis.com/maps/api/place/findplacefromtext/json",
+                params={
+                    "input": name,
+                    "inputtype": "textquery",
+                    "locationbias": f"point:{lat},{lng}",
+                    "fields": "place_id,photos,name",
+                    "key": api_key
+                },
+                timeout=10.0
+            )
+            data = response.json()
+            
+            if data.get("status") != "OK" or not data.get("candidates"):
+                return None
+            
+            candidate = data["candidates"][0]
+            place_id = candidate.get("place_id")
+            
+            # Get photos from the candidate
+            photos = []
+            for photo in candidate.get("photos", [])[:3]:
+                photo_ref = photo.get("photo_reference")
+                if photo_ref:
+                    photo_url = f"https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference={photo_ref}&key={api_key}"
+                    photos.append(photo_url)
+            
+            # If no photos in candidate, fetch from details
+            if not photos and place_id:
+                photos = await fetch_place_photos(place_id)
+            
+            return {"place_id": place_id, "photos": photos}
+    except Exception as e:
+        logger.error(f"Error searching place for photos: {e}")
+        return None
 
 @cannabis_router.get("/dispensaries/{shop_id}")
 async def get_dispensary(shop_id: str, lat: Optional[float] = None, lng: Optional[float] = None):

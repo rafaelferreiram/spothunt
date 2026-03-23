@@ -778,10 +778,11 @@ const StrainRow = ({ strain, onClick, isFavorite = false, onToggleFavorite }) =>
 // Feed Card View for Dispensaries (consistent with FeedCard design)
 const DispensaryFeedCard = ({ dispensary, onClick, formatDistance, isFavorite = false, onToggleFavorite }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const flags = { US: "🇺🇸", NL: "🇳🇱", ES: "🇪🇸", CA: "🇨🇦", TH: "🇹🇭", DE: "🇩🇪", PT: "🇵🇹", BR: "🇧🇷", UY: "🇺🇾", AT: "🇦🇹", CH: "🇨🇭", BE: "🇧🇪", IT: "🇮🇹", FR: "🇫🇷", GB: "🇬🇧", CZ: "🇨🇿", PL: "🇵🇱", GR: "🇬🇷" };
   
-  // Cannabis-related images for dispensaries
-  const getImageUrl = () => {
+  // Fallback cannabis-related images
+  const getFallbackImage = () => {
     const images = [
       "https://images.unsplash.com/photo-1603909223429-69bb7101f420?w=800&q=80", // Cannabis buds
       "https://images.unsplash.com/photo-1536819114556-1e10f967fb61?w=800&q=80", // Dispensary products
@@ -795,6 +796,25 @@ const DispensaryFeedCard = ({ dispensary, onClick, formatDistance, isFavorite = 
     return images[hash % images.length];
   };
 
+  // Get the best available image
+  const getImageUrl = () => {
+    // If image already errored, use fallback
+    if (imageError) {
+      return getFallbackImage();
+    }
+    // Use real Google photo if available
+    if (dispensary.photos && dispensary.photos.length > 0 && dispensary.photos[0]) {
+      return dispensary.photos[0];
+    }
+    // Use fallback
+    return getFallbackImage();
+  };
+
+  const handleImageError = () => {
+    setImageError(true);
+    setImageLoaded(true);
+  };
+
   const handleMaps = (e) => {
     e.stopPropagation();
     if (dispensary.maps_deep_link) {
@@ -806,6 +826,9 @@ const DispensaryFeedCard = ({ dispensary, onClick, formatDistance, isFavorite = 
       }
     }
   };
+
+  // Check if using real Google photo
+  const hasRealPhoto = dispensary.photos && dispensary.photos.length > 0 && dispensary.photos[0] && !imageError;
 
   return (
     <div
@@ -823,6 +846,7 @@ const DispensaryFeedCard = ({ dispensary, onClick, formatDistance, isFavorite = 
           alt={dispensary.name}
           className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
           onLoad={() => setImageLoaded(true)}
+          onError={handleImageError}
         />
         
         {/* Gradient Overlay */}
