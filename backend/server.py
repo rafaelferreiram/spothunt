@@ -393,6 +393,109 @@ async def login(data: UserLogin, response: Response):
     del user_doc["password_hash"]
     return {"user": user_doc, "message": "Login successful"}
 
+@auth_router.post("/forgot-password")
+async def forgot_password(request: Request):
+    """Request password reset - generates a reset token"""
+    body = await request.json()
+    email = body.get("email")
+    
+    if not email:
+        raise HTTPException(status_code=400, detail="Email required")
+    
+    # Find user
+    user_doc = await db.users.find_one({"email": email}, {"_id": 0})
+    
+    if not user_doc:
+        # Don't reveal if email exists or not for security
+        return {"message": "If an account exists, a reset code has been generated"}
+    
+    if "password_hash" not in user_doc:
+        return {"message": "This account uses Google login. Please sign in with Google."}
+    
+    # Generate reset token
+    reset_token = f"reset_{uuid.uuid4().hex[:8]}"
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+    
+    # Store reset token
+    await db.password_resets.delete_many({"email": email})
+    await db.password_resets.insert_one({
+        "email": email,
+        "reset_token": reset_token,
+        "expires_at": expires_at.isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    
+    # In production, send email. For now, return token for testing
+    return {
+        "message": "Reset code generated",
+        "reset_token": reset_token,  # Remove this in production, send via email
+        "note": "Use this code to reset your password"
+    }
+
+@auth_router.post("/reset-password")
+async def reset_password(request: Request, response: Response):
+    """Reset password using token"""
+    body = await request.json()
+    reset_token = body.get("reset_token")
+    new_password = body.get("new_password")
+    
+    if not reset_token or not new_password:
+        raise HTTPException(status_code=400, detail="Reset token and new password required")
+    
+    if len(new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    
+    # Find reset token
+    reset_doc = await db.password_resets.find_one({"reset_token": reset_token}, {"_id": 0})
+    
+    if not reset_doc:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset code")
+    
+    # Check expiry
+    expires_at = datetime.fromisoformat(reset_doc["expires_at"].replace("Z", "+00:00"))
+    if datetime.now(timezone.utc) > expires_at:
+        await db.password_resets.delete_one({"reset_token": reset_token})
+        raise HTTPException(status_code=400, detail="Reset code has expired")
+    
+    email = reset_doc["email"]
+    
+    # Update password
+    password_hash = hash_password(new_password)
+    await db.users.update_one(
+        {"email": email},
+        {"$set": {"password_hash": password_hash}}
+    )
+    
+    # Delete reset token
+    await db.password_resets.delete_one({"reset_token": reset_token})
+    
+    # Auto-login user
+    user_doc = await db.users.find_one({"email": email}, {"_id": 0, "password_hash": 0})
+    user_id = user_doc["user_id"]
+    
+    session_token = f"sess_{uuid.uuid4().hex}"
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    
+    await db.user_sessions.delete_many({"user_id": user_id})
+    await db.user_sessions.insert_one({
+        "user_id": user_id,
+        "session_token": session_token,
+        "expires_at": expires_at.isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        path="/",
+        max_age=7 * 24 * 60 * 60
+    )
+    
+    return {"message": "Password reset successful", "user": user_doc}
+
 @auth_router.get("/me")
 async def get_me(user: User = Depends(get_current_user)):
     """Get current authenticated user"""
@@ -1032,6 +1135,60 @@ async def get_location_name(lat: float, lng: float):
     """Get location name from coordinates"""
     location = await reverse_geocode(lat, lng)
     return location
+
+@places_router.get("/search-city")
+async def search_city(query: str):
+    """Search for cities using Google Geocoding"""
+    api_key = os.environ.get('GOOGLE_MAPS_API_KEY')
+    if not api_key:
+        raise HTTPException(status_code=503, detail="Google API not configured")
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                "https://maps.googleapis.com/maps/api/geocode/json",
+                params={
+                    "address": query,
+                    "key": api_key,
+                    "result_type": "locality|administrative_area_level_1|administrative_area_level_2"
+                }
+            )
+            data = response.json()
+            
+            if data.get("status") != "OK":
+                return {"results": []}
+            
+            results = []
+            for result in data.get("results", [])[:5]:
+                location = result.get("geometry", {}).get("location", {})
+                
+                # Extract city and country
+                city_name = ""
+                country_name = ""
+                for component in result.get("address_components", []):
+                    types = component.get("types", [])
+                    if "locality" in types:
+                        city_name = component.get("long_name")
+                    elif "administrative_area_level_1" in types and not city_name:
+                        city_name = component.get("long_name")
+                    if "country" in types:
+                        country_name = component.get("long_name")
+                
+                if not city_name:
+                    city_name = result.get("formatted_address", "").split(",")[0]
+                
+                results.append({
+                    "name": city_name,
+                    "country": country_name,
+                    "lat": location.get("lat"),
+                    "lng": location.get("lng"),
+                    "formatted_address": result.get("formatted_address")
+                })
+            
+            return {"results": results}
+    except Exception as e:
+        logger.error(f"City search error: {e}")
+        return {"results": []}
 
 @places_router.get("/{place_id}")
 async def get_place(place_id: str, lat: float = 40.7128, lng: float = -74.0060, request: Request = None):

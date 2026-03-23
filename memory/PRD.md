@@ -123,16 +123,28 @@ Build CityBlend - a hyperlocal discovery app for travelers. A mobile-first disco
 - **Shuffle Feature**: Tinder-like swipe discovery page with vibe filters
 - **Bottom Nav Update**: Added Shuffle tab with flame icon
 
+### March 23, 2026 (Session 7) - "I'm Visiting" & Day Planner
+- **"I'm Visiting" Mode**: Users can search and explore any city worldwide
+- **Day Plan Builder**: Create and organize daily itineraries
+- **Password Auth**: Full username/password registration and login
+- **Password Reset**: Token-based password reset flow
+- **Watermark Removal**: Removed all "Made with Emergent" branding
+
+### March 23, 2026 (Session 8) - Landing Page & Icon Update
+- **New Cannabis Icon**: Custom 7-leaflet cannabis leaf SVG matching user's brand design
+- **Enhanced Landing Page**: Feature showcase section with 4 feature cards (Shuffle, Filters, Visit, Day Planner)
+- **Stats Section**: Displays "6,000+ Dispensaries", "Real Google Reviews", "Live Travel Times"
+- **Improved Onboarding**: Better visual preview of app capabilities for new users
+
 ## Prioritized Backlog
 
 ### P0 - Critical (Next)
-- None - Core features complete with Google APIs and advanced filters
+- None - Core features complete including all major requested features
 
 ### P1 - High Priority
-- [ ] "I'm Visiting" mode - preview places in different cities
-- [ ] Day Plan Builder - drag-and-drop itinerary
 - [ ] Cannabis dispensary reviews
 - [ ] Establishment age filter ("Open since X years")
+- [ ] Backend refactoring (split server.py into routers)
 
 ### P2 - Medium Priority
 - [ ] Location search / "I'm visiting X city" feature
@@ -149,10 +161,11 @@ Build CityBlend - a hyperlocal discovery app for travelers. A mobile-first disco
 - [ ] Strain Journal for cannabis users
 
 ## Next Tasks
-1. Implement "I'm Visiting" feature for city preview
-2. Add Day Plan Builder with drag-and-drop
-3. Cannabis dispensary reviews
+1. Add cannabis dispensary reviews functionality
+2. Implement establishment age filter
+3. Backend refactoring - split server.py into modular routers
 4. Social sharing features
+5. AI-powered recommendations chat
 
 ## Technical Notes
 
