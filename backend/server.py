@@ -1388,7 +1388,7 @@ async def get_dispensaries(
         cursor = db.shops.find(query, {"_id": 0})
         all_dispensaries = await cursor.to_list(length=5000)
         
-        # Calculate distances
+        # Calculate distances and add photo URLs
         for disp in all_dispensaries:
             coords = disp.get("coordinates", {})
             if coords.get("lat") and coords.get("lng"):
@@ -1400,6 +1400,10 @@ async def get_dispensaries(
                 disp["maps_deep_link"] = f"https://www.google.com/maps/search/?api=1&query={coords['lat']},{coords['lng']}"
             else:
                 disp["distance_m"] = float("inf")
+            
+            # Add Google Places photo if place_id exists
+            if disp.get("place_id") and os.environ.get('GOOGLE_MAPS_API_KEY'):
+                disp["photo_url"] = f"https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference={disp.get('photo_ref', '')}&key={os.environ.get('GOOGLE_MAPS_API_KEY')}" if disp.get('photo_ref') else None
         
         # Sort by distance
         all_dispensaries.sort(key=lambda x: x.get("distance_m", float("inf")))

@@ -139,7 +139,12 @@ Build SpotHunt - a hyperlocal discovery app for travelers. A mobile-first discov
 - **Spots Feed View**: Cannabis dispensaries now display as feed cards (like For You page) with image, location, rating, distance
 - **View Toggle**: Added Feed/List view toggle for Spots tab - users can switch between card view and compact list
 
-### March 23, 2026 (Session 9) - Major Rebrand & Features
+### March 23, 2026 (Session 10) - Photos & PWA Improvements
+- **Real Google Places Photos**: Shuffle cards now display actual photos from Google Places API
+- **Shuffle Favorites Integration**: Swipe right now adds places to favorites with heart icon toast
+- **PWA Responsiveness**: Enhanced CSS with safe area support, touch optimizations, and fullscreen adjustments
+- **Mobile-First Shuffle**: Improved card sizing and button responsiveness for smaller screens
+- **Category-Specific Fallbacks**: Smart fallback images based on place category when Google photo unavailable
 - **App Renamed**: "CityBlend" → "SpotHunt" across all components
 - **New Cannabis Icon**: Classic 7-leaflet silhouette design (matches user's reference image)
 - **Food Type Filters**: Added subcategory filters for restaurants - Italian, Pizza, Burger, Sushi, Mexican, BBQ, Asian, Seafood, Steakhouse, Vegan

@@ -53,6 +53,7 @@ const SwipeCard = ({ place, onSwipe, onInfo, active }) => {
   const rotate = useTransform(x, [-200, 200], [-25, 25]);
   const likeOpacity = useTransform(x, [0, 100], [0, 1]);
   const nopeOpacity = useTransform(x, [-100, 0], [1, 0]);
+  const [imageError, setImageError] = useState(false);
 
   const formatDistance = (m) => {
     if (!m) return "";
@@ -60,9 +61,27 @@ const SwipeCard = ({ place, onSwipe, onInfo, active }) => {
     return `${(m / 1000).toFixed(1)}km`;
   };
 
+  // Get the best available photo
+  const getPhotoUrl = () => {
+    // Use Google Places photo if available
+    if (place.photos?.length > 0 && place.photos[0] && !imageError) {
+      return place.photos[0];
+    }
+    // Category-specific fallbacks
+    const fallbacks = {
+      restaurant: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&q=80",
+      bar: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=800&q=80",
+      cafe: "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=800&q=80",
+      museum: "https://images.unsplash.com/photo-1554907984-15263bfd63bd?w=800&q=80",
+      outdoors: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=80",
+      dispensary: "https://images.unsplash.com/photo-1603909223429-69bb7101f420?w=800&q=80",
+    };
+    return fallbacks[place.category] || "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&q=80";
+  };
+
   return (
     <motion.div
-      className="absolute w-full h-full"
+      className="absolute w-full h-full touch-none"
       style={{ x, rotate, zIndex: active ? 10 : 0 }}
       drag={active ? "x" : false}
       dragConstraints={{ left: 0, right: 0 }}
@@ -77,13 +96,14 @@ const SwipeCard = ({ place, onSwipe, onInfo, active }) => {
       animate={{ scale: active ? 1 : 0.95, y: active ? 0 : 10 }}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
     >
-      <div className="relative w-full h-full rounded-3xl overflow-hidden shadow-2xl bg-card cursor-grab active:cursor-grabbing">
+      <div className="relative w-full h-full rounded-3xl overflow-hidden shadow-2xl bg-card cursor-grab active:cursor-grabbing select-none">
         {/* Image */}
         <img
-          src={place.photos?.[0] || `https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800`}
+          src={getPhotoUrl()}
           alt={place.name}
           className="w-full h-full object-cover pointer-events-none"
           draggable={false}
+          onError={() => setImageError(true)}
         />
 
         {/* Gradient Overlay */}
@@ -91,27 +111,27 @@ const SwipeCard = ({ place, onSwipe, onInfo, active }) => {
 
         {/* LIKE indicator */}
         <motion.div
-          className="absolute top-1/3 right-8 px-6 py-2 rounded-lg border-4 border-green-500 rotate-12 pointer-events-none"
+          className="absolute top-1/3 right-4 sm:right-8 px-4 sm:px-6 py-2 rounded-lg border-4 border-green-500 rotate-12 pointer-events-none"
           style={{ opacity: likeOpacity }}
         >
-          <span className="text-green-500 font-bold text-3xl">LIKE</span>
+          <span className="text-green-500 font-bold text-2xl sm:text-3xl">LIKE</span>
         </motion.div>
 
         {/* NOPE indicator */}
         <motion.div
-          className="absolute top-1/3 left-8 px-6 py-2 rounded-lg border-4 border-red-500 -rotate-12 pointer-events-none"
+          className="absolute top-1/3 left-4 sm:left-8 px-4 sm:px-6 py-2 rounded-lg border-4 border-red-500 -rotate-12 pointer-events-none"
           style={{ opacity: nopeOpacity }}
         >
-          <span className="text-red-500 font-bold text-3xl">NOPE</span>
+          <span className="text-red-500 font-bold text-2xl sm:text-3xl">NOPE</span>
         </motion.div>
 
         {/* Top Badges */}
-        <div className="absolute top-4 left-4 right-4 flex justify-between items-start pointer-events-none">
-          <Badge className="bg-white/90 text-foreground backdrop-blur-sm px-3 py-1">
+        <div className="absolute top-3 sm:top-4 left-3 sm:left-4 right-3 sm:right-4 flex justify-between items-start pointer-events-none">
+          <Badge className="bg-white/90 text-foreground backdrop-blur-sm px-2.5 sm:px-3 py-1 text-xs">
             {formatDistance(place.distance_m)} away
           </Badge>
           {place.match_score >= 80 && (
-            <Badge className="bg-gradient-to-r from-pink-500 to-rose-500 text-white px-3 py-1">
+            <Badge className="bg-gradient-to-r from-pink-500 to-rose-500 text-white px-2.5 sm:px-3 py-1 text-xs">
               {place.match_score}% match
             </Badge>
           )}
@@ -123,35 +143,35 @@ const SwipeCard = ({ place, onSwipe, onInfo, active }) => {
             e.stopPropagation();
             onInfo(place);
           }}
-          className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition-colors z-20"
+          className="absolute top-3 sm:top-4 right-3 sm:right-4 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition-colors z-20 pointer-events-auto"
         >
-          <Info className="w-5 h-5" />
+          <Info className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
 
         {/* Content */}
-        <div className="absolute bottom-0 left-0 right-0 p-5 pointer-events-none">
-          <h2 className="font-bold text-2xl text-white mb-1 line-clamp-2">
+        <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-5 pointer-events-none">
+          <h2 className="font-bold text-xl sm:text-2xl text-white mb-1 line-clamp-2">
             {place.name}
           </h2>
-          <p className="text-white/70 text-sm mb-3 capitalize line-clamp-1">
+          <p className="text-white/70 text-xs sm:text-sm mb-2 sm:mb-3 capitalize line-clamp-1">
             {place.subcategories?.slice(0, 2).join(" · ") || place.type || place.category}
           </p>
 
           {/* Stats */}
-          <div className="flex items-center gap-4 text-sm text-white/90">
+          <div className="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm text-white/90">
             <span className="flex items-center gap-1">
-              <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+              <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-amber-400 text-amber-400" />
               <span className="font-semibold">{place.rating?.toFixed(1) || "—"}</span>
             </span>
             {place.walk_mins && (
               <span className="flex items-center gap-1">
-                <Footprints className="w-4 h-4" />
+                <Footprints className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 {place.walk_mins} min
               </span>
             )}
             {place.drive_mins && (
               <span className="flex items-center gap-1">
-                <Car className="w-4 h-4" />
+                <Car className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 {place.drive_mins} min
               </span>
             )}
@@ -239,6 +259,7 @@ const ShufflePage = () => {
 
     if (direction === "right") {
       try {
+        // Save to places (existing functionality)
         await fetch(`${API}/user/save-place`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -249,7 +270,22 @@ const ShufflePage = () => {
           ...prev,
           saved_places: [...(prev?.saved_places || []), place.id],
         }));
-        toast.success(`Saved ${place.name}!`, { duration: 1500 });
+
+        // Also add to cannabis favorites if it's a dispensary
+        if (place.category === "dispensary" && place.shop_id) {
+          await fetch(`${API}/cannabis/favorites?item_id=${place.shop_id}&item_type=dispensary`, {
+            method: "POST",
+            credentials: "include"
+          });
+        }
+
+        toast.success(
+          <div className="flex items-center gap-2">
+            <Heart className="w-4 h-4 fill-pink-500 text-pink-500" />
+            <span>Added to favorites!</span>
+          </div>,
+          { duration: 1500 }
+        );
       } catch (e) {
         // Silent fail
       }
@@ -334,8 +370,8 @@ const ShufflePage = () => {
       </header>
 
       {/* Card Stack */}
-      <main className="relative px-4 pt-6">
-        <div className="relative h-[55vh] max-h-[480px] w-full max-w-sm mx-auto">
+      <main className="relative px-4 pt-4 sm:pt-6">
+        <div className="relative h-[60vh] sm:h-[55vh] max-h-[520px] w-full max-w-[360px] mx-auto">
           {loading ? (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
@@ -345,7 +381,7 @@ const ShufflePage = () => {
             </div>
           ) : !hasMore ? (
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center">
+              <div className="text-center px-4">
                 <Zap className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
                 <h3 className="font-semibold text-lg mb-2">That's all!</h3>
                 <p className="text-muted-foreground text-sm mb-4">
@@ -384,24 +420,24 @@ const ShufflePage = () => {
         {/* Action Buttons */}
         {hasMore && !loading && (
           <>
-            <div className="flex justify-center gap-6 mt-8">
+            <div className="flex justify-center gap-4 sm:gap-6 mt-6 sm:mt-8">
               <button
                 onClick={() => handleSwipe("left")}
-                className="w-16 h-16 rounded-full bg-white dark:bg-zinc-800 shadow-lg flex items-center justify-center border border-border/50 hover:scale-110 active:scale-95 transition-transform"
+                className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white dark:bg-zinc-800 shadow-lg flex items-center justify-center border border-border/50 hover:scale-110 active:scale-95 transition-transform"
                 data-testid="swipe-left-btn"
               >
-                <X className="w-8 h-8 text-red-500" />
+                <X className="w-7 h-7 sm:w-8 sm:h-8 text-red-500" />
               </button>
               <button
                 onClick={() => handleSwipe("right")}
-                className="w-16 h-16 rounded-full bg-gradient-to-br from-pink-500 to-rose-500 shadow-lg shadow-pink-500/30 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
+                className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-pink-500 to-rose-500 shadow-lg shadow-pink-500/30 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
                 data-testid="swipe-right-btn"
               >
-                <Heart className="w-8 h-8 text-white" />
+                <Heart className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
               </button>
             </div>
-            <p className="text-center text-xs text-muted-foreground mt-4">
-              Swipe right to save • Left to skip
+            <p className="text-center text-xs text-muted-foreground mt-3 sm:mt-4">
+              Swipe right to save to favorites • Left to skip
             </p>
           </>
         )}
