@@ -124,6 +124,16 @@ class ReviewCreate(BaseModel):
     text: Optional[str] = None
     photos: List[str] = []
 
+# Username/Password Auth Models
+class UserRegister(BaseModel):
+    email: str
+    password: str
+    name: str
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
 class Review(BaseModel):
     model_config = ConfigDict(extra="ignore")
     review_id: str
@@ -267,6 +277,121 @@ async def exchange_session(request: Request, response: Response):
     user_doc = await db.users.find_one({"user_id": user_id}, {"_id": 0})
     
     return {"user": user_doc}
+
+# ============== USERNAME/PASSWORD AUTH ==============
+
+def hash_password(password: str) -> str:
+    """Simple password hashing using hashlib"""
+    import hashlib
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def verify_password(password: str, hashed: str) -> bool:
+    """Verify password against hash"""
+    return hash_password(password) == hashed
+
+@auth_router.post("/register")
+async def register(data: UserRegister, response: Response):
+    """Register a new user with email/password"""
+    # Check if email already exists
+    existing = await db.users.find_one({"email": data.email}, {"_id": 0})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Validate password
+    if len(data.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    
+    # Create user
+    user_id = f"user_{uuid.uuid4().hex[:12]}"
+    password_hash = hash_password(data.password)
+    
+    new_user = {
+        "user_id": user_id,
+        "email": data.email,
+        "name": data.name,
+        "password_hash": password_hash,
+        "picture": None,
+        "taste_profile": None,
+        "onboarding_completed": False,
+        "saved_places": [],
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "auth_type": "password"
+    }
+    await db.users.insert_one(new_user)
+    
+    # Create session
+    session_token = f"sess_{uuid.uuid4().hex}"
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    session_doc = {
+        "user_id": user_id,
+        "session_token": session_token,
+        "expires_at": expires_at.isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.user_sessions.insert_one(session_doc)
+    
+    # Set cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        path="/",
+        max_age=7 * 24 * 60 * 60
+    )
+    
+    # Return user (without password)
+    user_doc = await db.users.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0})
+    return {"user": user_doc, "message": "Registration successful"}
+
+@auth_router.post("/login")
+async def login(data: UserLogin, response: Response):
+    """Login with email/password"""
+    # Find user
+    user_doc = await db.users.find_one({"email": data.email}, {"_id": 0})
+    
+    if not user_doc:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    # Check if user has password (might be Google auth user)
+    if "password_hash" not in user_doc:
+        raise HTTPException(status_code=401, detail="Please login with Google")
+    
+    # Verify password
+    if not verify_password(data.password, user_doc["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    user_id = user_doc["user_id"]
+    
+    # Create new session
+    session_token = f"sess_{uuid.uuid4().hex}"
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    session_doc = {
+        "user_id": user_id,
+        "session_token": session_token,
+        "expires_at": expires_at.isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Remove old sessions
+    await db.user_sessions.delete_many({"user_id": user_id})
+    await db.user_sessions.insert_one(session_doc)
+    
+    # Set cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        path="/",
+        max_age=7 * 24 * 60 * 60
+    )
+    
+    # Return user (without password)
+    del user_doc["password_hash"]
+    return {"user": user_doc, "message": "Login successful"}
 
 @auth_router.get("/me")
 async def get_me(user: User = Depends(get_current_user)):
