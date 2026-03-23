@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,27 +6,27 @@
 
 @layer base {
     :root {
-        --background: 45 20% 93%;
-        --foreground: 145 48% 20%;
+        --background: 0 0% 98%;
+        --foreground: 0 0% 9%;
         --card: 0 0% 100%;
-        --card-foreground: 145 48% 20%;
+        --card-foreground: 0 0% 9%;
         --popover: 0 0% 100%;
-        --popover-foreground: 145 48% 20%;
-        --primary: 145 48% 20%;
-        --primary-foreground: 45 20% 93%;
-        --secondary: 45 15% 90%;
-        --secondary-foreground: 145 48% 20%;
-        --muted: 45 12% 88%;
-        --muted-foreground: 140 10% 40%;
-        --accent: 18 100% 60%;
+        --popover-foreground: 0 0% 9%;
+        --primary: 0 0% 9%;
+        --primary-foreground: 0 0% 98%;
+        --secondary: 0 0% 96%;
+        --secondary-foreground: 0 0% 9%;
+        --muted: 0 0% 94%;
+        --muted-foreground: 0 0% 45%;
+        --accent: 24 95% 53%;
         --accent-foreground: 0 0% 100%;
         --destructive: 0 84% 60%;
         --destructive-foreground: 0 0% 98%;
-        --border: 45 10% 82%;
-        --input: 45 10% 82%;
-        --ring: 145 48% 20%;
+        --border: 0 0% 90%;
+        --input: 0 0% 90%;
+        --ring: 0 0% 9%;
         --radius: 1rem;
-        --chart-1: 18 100% 60%;
+        --chart-1: 24 95% 53%;
         --chart-2: 145 48% 35%;
         --chart-3: 200 50% 50%;
         --chart-4: 280 60% 55%;
@@ -34,26 +34,26 @@
     }
 
     .dark {
-        --background: 0 0% 11%;
-        --foreground: 0 0% 90%;
-        --card: 0 0% 17%;
-        --card-foreground: 0 0% 90%;
-        --popover: 0 0% 17%;
-        --popover-foreground: 0 0% 90%;
-        --primary: 0 0% 90%;
-        --primary-foreground: 0 0% 11%;
-        --secondary: 0 0% 17%;
-        --secondary-foreground: 0 0% 90%;
-        --muted: 0 0% 17%;
-        --muted-foreground: 0 0% 65%;
-        --accent: 36 100% 55%;
-        --accent-foreground: 0 0% 11%;
+        --background: 0 0% 4%;
+        --foreground: 0 0% 95%;
+        --card: 0 0% 7%;
+        --card-foreground: 0 0% 95%;
+        --popover: 0 0% 7%;
+        --popover-foreground: 0 0% 95%;
+        --primary: 0 0% 95%;
+        --primary-foreground: 0 0% 4%;
+        --secondary: 0 0% 12%;
+        --secondary-foreground: 0 0% 95%;
+        --muted: 0 0% 15%;
+        --muted-foreground: 0 0% 60%;
+        --accent: 24 95% 53%;
+        --accent-foreground: 0 0% 100%;
         --destructive: 0 63% 31%;
         --destructive-foreground: 0 0% 98%;
-        --border: 0 0% 23%;
-        --input: 0 0% 23%;
+        --border: 0 0% 18%;
+        --input: 0 0% 18%;
         --ring: 0 0% 83%;
-        --chart-1: 36 100% 55%;
+        --chart-1: 24 95% 53%;
         --chart-2: 145 50% 45%;
         --chart-3: 200 60% 50%;
         --chart-4: 280 65% 60%;
@@ -73,17 +73,21 @@
 
     body {
         @apply bg-background text-foreground antialiased;
-        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
     }
 
     h1, h2, h3, h4, h5, h6 {
-        font-family: 'Fraunces', serif;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-weight: 600;
     }
 }
 
 @layer utilities {
     .font-heading {
-        font-family: 'Fraunces', serif;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-weight: 600;
     }
 
     .font-body {
@@ -91,11 +95,11 @@
     }
 
     .glass {
-        @apply bg-white/10 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/10;
+        @apply bg-white/70 dark:bg-black/40 backdrop-blur-2xl border border-white/20 dark:border-white/5;
     }
 
     .glass-card {
-        @apply bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border border-white/20 dark:border-zinc-800/50;
+        @apply bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl border border-white/20 dark:border-zinc-800/50 shadow-sm;
     }
 
     .text-balance {
@@ -109,6 +113,20 @@
 
     .hide-scrollbar::-webkit-scrollbar {
         display: none;
+    }
+
+    /* Modern gradient text */
+    .gradient-text {
+        @apply bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70;
+    }
+
+    /* Smooth shadows */
+    .shadow-soft {
+        box-shadow: 0 2px 8px -2px rgba(0,0,0,0.1), 0 4px 16px -4px rgba(0,0,0,0.1);
+    }
+
+    .shadow-soft-lg {
+        box-shadow: 0 4px 16px -4px rgba(0,0,0,0.1), 0 8px 32px -8px rgba(0,0,0,0.15);
     }
 }
 

@@ -753,6 +753,10 @@ async def get_places(
     search: Optional[str] = None,
     use_google: bool = True,
     include_travel_times: bool = True,
+    min_rating: Optional[float] = None,
+    max_price: Optional[int] = None,
+    min_price: Optional[int] = None,
+    sort_by: Optional[str] = None,  # distance, rating, price
     request: Request = None
 ):
     """Get places with optional filters - uses Google Places API or mock data"""
@@ -783,13 +787,31 @@ async def get_places(
                 if include_travel_times:
                     places = await enrich_places_with_travel_times(places, lat, lng)
                 
+                # Apply filters
+                if min_rating:
+                    places = [p for p in places if p.get("rating", 0) >= min_rating]
+                if max_price is not None:
+                    places = [p for p in places if p.get("price_level", 0) <= max_price]
+                if min_price is not None:
+                    places = [p for p in places if p.get("price_level", 0) >= min_price]
+                if max_distance:
+                    places = [p for p in places if p.get("distance_m", 0) <= max_distance]
+                
                 # Add personalized match scores
                 for place in places:
                     if taste_profile:
                         place["match_score"] = calculate_match_score(place, taste_profile)
                 
-                # Sort by match score then distance
-                places.sort(key=lambda x: (-x.get("match_score", 0), x.get("distance_m", 9999)))
+                # Sort based on preference
+                if sort_by == "distance":
+                    places.sort(key=lambda x: x.get("distance_m", 9999))
+                elif sort_by == "rating":
+                    places.sort(key=lambda x: -x.get("rating", 0))
+                elif sort_by == "price":
+                    places.sort(key=lambda x: x.get("price_level", 0))
+                else:
+                    # Default: match score then distance
+                    places.sort(key=lambda x: (-x.get("match_score", 0), x.get("distance_m", 9999)))
                 
                 return {"places": places, "total": len(places), "source": "google"}
         except Exception as e:

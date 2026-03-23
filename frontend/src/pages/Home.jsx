@@ -3,8 +3,19 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/App";
 import { API } from "@/App";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { Slider } from "@/components/ui/slider";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
 import BottomNav from "@/components/BottomNav";
 import FeedCard from "@/components/FeedCard";
 import MapView from "@/components/MapView";
@@ -21,7 +32,13 @@ import {
   ShoppingBag,
   X,
   Map,
-  LayoutGrid
+  LayoutGrid,
+  SlidersHorizontal,
+  Star,
+  DollarSign,
+  Clock,
+  ArrowUpDown,
+  RotateCcw
 } from "lucide-react";
 
 const CATEGORIES = [
@@ -35,6 +52,30 @@ const CATEGORIES = [
   { id: "market", name: "Markets", icon: ShoppingBag },
 ];
 
+const RADIUS_OPTIONS = [
+  { value: 1000, label: "1 km" },
+  { value: 5000, label: "5 km" },
+  { value: 10000, label: "10 km" },
+  { value: 25000, label: "25 km" },
+  { value: 50000, label: "50 km" },
+  { value: 100000, label: "100 km" },
+];
+
+const RATING_OPTIONS = [
+  { value: 0, label: "Any" },
+  { value: 3, label: "3+" },
+  { value: 3.5, label: "3.5+" },
+  { value: 4, label: "4+" },
+  { value: 4.5, label: "4.5+" },
+];
+
+const SORT_OPTIONS = [
+  { value: "relevance", label: "Relevance", icon: Sparkles },
+  { value: "distance", label: "Distance", icon: MapPin },
+  { value: "rating", label: "Rating", icon: Star },
+  { value: "price", label: "Price", icon: DollarSign },
+];
+
 const Home = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -43,10 +84,30 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [openNow, setOpenNow] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
   const [locationName, setLocationName] = useState("Finding you...");
   const [locationLoading, setLocationLoading] = useState(true);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Filters
+  const [filters, setFilters] = useState({
+    radius: 5000,
+    openNow: false,
+    minRating: 0,
+    priceRange: [0, 4],
+    sortBy: "relevance",
+  });
+
+  // Temp filters for drawer (apply on confirm)
+  const [tempFilters, setTempFilters] = useState(filters);
+
+  const activeFilterCount = [
+    filters.radius !== 5000,
+    filters.openNow,
+    filters.minRating > 0,
+    filters.priceRange[0] > 0 || filters.priceRange[1] < 4,
+    filters.sortBy !== "relevance",
+  ].filter(Boolean).length;
 
   // Get user's actual location
   useEffect(() => {
@@ -57,7 +118,6 @@ const Home = () => {
           const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
           setUserLocation(loc);
           
-          // Get location name from coordinates
           try {
             const res = await fetch(`${API}/places/location?lat=${loc.lat}&lng=${loc.lng}`);
             const data = await res.json();
@@ -72,7 +132,6 @@ const Home = () => {
         },
         (error) => {
           console.log("Geolocation error:", error);
-          // Default to NYC
           setUserLocation({ lat: 40.7128, lng: -74.0060 });
           setLocationName("New York City");
           setLocationLoading(false);
@@ -94,11 +153,17 @@ const Home = () => {
       const params = new URLSearchParams({ 
         lat: userLocation.lat.toString(), 
         lng: userLocation.lng.toString(),
-        use_google: "true"
+        use_google: "true",
+        max_distance: filters.radius.toString(),
       });
+      
       if (activeCategory !== "all") params.append("category", activeCategory);
       if (searchQuery) params.append("search", searchQuery);
-      if (openNow) params.append("open_now", "true");
+      if (filters.openNow) params.append("open_now", "true");
+      if (filters.minRating > 0) params.append("min_rating", filters.minRating.toString());
+      if (filters.priceRange[0] > 0) params.append("min_price", filters.priceRange[0].toString());
+      if (filters.priceRange[1] < 4) params.append("max_price", filters.priceRange[1].toString());
+      if (filters.sortBy !== "relevance") params.append("sort_by", filters.sortBy);
 
       const res = await fetch(`${API}/places/?${params}`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed");
@@ -109,7 +174,7 @@ const Home = () => {
     } finally {
       setLoading(false);
     }
-  }, [userLocation, activeCategory, searchQuery, openNow]);
+  }, [userLocation, activeCategory, searchQuery, filters]);
 
   useEffect(() => { 
     if (userLocation) fetchPlaces(); 
@@ -120,65 +185,267 @@ const Home = () => {
     return () => clearTimeout(t);
   }, [searchQuery]);
 
+  const applyFilters = () => {
+    setFilters(tempFilters);
+    setDrawerOpen(false);
+  };
+
+  const resetFilters = () => {
+    const defaultFilters = {
+      radius: 5000,
+      openNow: false,
+      minRating: 0,
+      priceRange: [0, 4],
+      sortBy: "relevance",
+    };
+    setTempFilters(defaultFilters);
+  };
+
+  const openDrawer = () => {
+    setTempFilters(filters);
+    setDrawerOpen(true);
+  };
+
   return (
-    <div className="min-h-screen bg-background pb-28" data-testid="home-page">
+    <div className="min-h-screen bg-background pb-24" data-testid="home-page">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm">
-        <div className="px-4 pt-6 pb-4 space-y-4">
-          {/* Location & View Toggle */}
+      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/40">
+        <div className="px-4 pt-4 pb-3 space-y-3">
+          {/* Top Row: Location & View Toggle */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
                 <MapPin className="w-4 h-4 text-primary" />
               </div>
               <div>
-                <p className="font-medium text-sm">{locationLoading ? "Finding you..." : locationName}</p>
-                <p className="text-xs text-muted-foreground">
-                  {locationLoading ? "Getting location" : "Nearby places"}
+                <p className="font-medium text-sm leading-tight">
+                  {locationLoading ? "Finding you..." : locationName}
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  {RADIUS_OPTIONS.find(r => r.value === filters.radius)?.label || "5 km"} radius
                 </p>
               </div>
             </div>
 
-            <div className="flex bg-muted/50 rounded-xl p-1">
-              <button
-                onClick={() => setViewMode("feed")}
-                className={`p-2 rounded-lg transition-all ${viewMode === "feed" ? "bg-background shadow-sm" : ""}`}
-                data-testid="feed-view-btn"
-              >
-                <LayoutGrid className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setViewMode("map")}
-                className={`p-2 rounded-lg transition-all ${viewMode === "map" ? "bg-background shadow-sm" : ""}`}
-                data-testid="map-view-btn"
-              >
-                <Map className="w-4 h-4" />
-              </button>
+            <div className="flex items-center gap-2">
+              <div className="flex bg-muted/40 rounded-full p-0.5">
+                <button
+                  onClick={() => setViewMode("feed")}
+                  className={`p-2 rounded-full transition-all ${viewMode === "feed" ? "bg-background shadow-sm" : "text-muted-foreground"}`}
+                  data-testid="feed-view-btn"
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode("map")}
+                  className={`p-2 rounded-full transition-all ${viewMode === "map" ? "bg-background shadow-sm" : "text-muted-foreground"}`}
+                  data-testid="map-view-btn"
+                >
+                  <Map className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Search places..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-11 h-12 rounded-2xl bg-muted/50 border-0 text-sm"
-              data-testid="search-input"
-            />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery("")} className="absolute right-4 top-1/2 -translate-y-1/2">
-                <X className="w-4 h-4 text-muted-foreground" />
-              </button>
-            )}
+          {/* Search Row */}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search places..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-11 rounded-full bg-muted/40 border-0 text-sm placeholder:text-muted-foreground/60 focus-visible:ring-1 focus-visible:ring-primary/30"
+                data-testid="search-input"
+              />
+              {searchQuery && (
+                <button 
+                  onClick={() => setSearchQuery("")} 
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-muted"
+                >
+                  <X className="w-3.5 h-3.5 text-muted-foreground" />
+                </button>
+              )}
+            </div>
+            
+            <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
+              <DrawerTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={openDrawer}
+                  className={`h-11 w-11 rounded-full border-0 ${activeFilterCount > 0 ? "bg-primary text-primary-foreground" : "bg-muted/40"}`}
+                  data-testid="filter-btn"
+                >
+                  <SlidersHorizontal className="w-4 h-4" />
+                  {activeFilterCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-accent text-[10px] font-bold flex items-center justify-center text-accent-foreground">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                </Button>
+              </DrawerTrigger>
+              
+              <DrawerContent className="max-h-[85vh]">
+                <DrawerHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <DrawerTitle className="text-lg font-semibold">Filters</DrawerTitle>
+                    <button 
+                      onClick={resetFilters}
+                      className="text-xs text-muted-foreground flex items-center gap-1 hover:text-foreground transition-colors"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      Reset
+                    </button>
+                  </div>
+                </DrawerHeader>
+                
+                <div className="px-4 pb-4 space-y-6 overflow-y-auto">
+                  {/* Radius */}
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-muted-foreground" />
+                      Distance
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {RADIUS_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.value}
+                          onClick={() => setTempFilters({ ...tempFilters, radius: opt.value })}
+                          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                            tempFilters.radius === opt.value 
+                              ? "bg-foreground text-background" 
+                              : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Rating */}
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium flex items-center gap-2">
+                      <Star className="w-4 h-4 text-muted-foreground" />
+                      Minimum Rating
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {RATING_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.value}
+                          onClick={() => setTempFilters({ ...tempFilters, minRating: opt.value })}
+                          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1 ${
+                            tempFilters.minRating === opt.value 
+                              ? "bg-foreground text-background" 
+                              : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                          }`}
+                        >
+                          {opt.value > 0 && <Star className="w-3 h-3 fill-current" />}
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Price Range */}
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium flex items-center gap-2">
+                      <DollarSign className="w-4 h-4 text-muted-foreground" />
+                      Price Range
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {[0, 1, 2, 3, 4].map((price) => (
+                        <button
+                          key={price}
+                          onClick={() => {
+                            const [min, max] = tempFilters.priceRange;
+                            if (price >= min && price <= max) {
+                              // If in range, narrow it
+                              if (price === min && price === max) {
+                                setTempFilters({ ...tempFilters, priceRange: [0, 4] });
+                              } else if (price === min) {
+                                setTempFilters({ ...tempFilters, priceRange: [price + 1, max] });
+                              } else if (price === max) {
+                                setTempFilters({ ...tempFilters, priceRange: [min, price - 1] });
+                              }
+                            } else {
+                              // Expand range to include
+                              setTempFilters({ ...tempFilters, priceRange: [Math.min(min, price), Math.max(max, price)] });
+                            }
+                          }}
+                          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                            price >= tempFilters.priceRange[0] && price <= tempFilters.priceRange[1]
+                              ? "bg-foreground text-background" 
+                              : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                          }`}
+                        >
+                          {price === 0 ? "Free" : "$".repeat(price)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Open Now */}
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-muted-foreground" />
+                      Hours
+                    </label>
+                    <button
+                      onClick={() => setTempFilters({ ...tempFilters, openNow: !tempFilters.openNow })}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                        tempFilters.openNow 
+                          ? "bg-foreground text-background" 
+                          : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                      }`}
+                    >
+                      Open Now
+                    </button>
+                  </div>
+
+                  {/* Sort By */}
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium flex items-center gap-2">
+                      <ArrowUpDown className="w-4 h-4 text-muted-foreground" />
+                      Sort By
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {SORT_OPTIONS.map((opt) => {
+                        const Icon = opt.icon;
+                        return (
+                          <button
+                            key={opt.value}
+                            onClick={() => setTempFilters({ ...tempFilters, sortBy: opt.value })}
+                            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 ${
+                              tempFilters.sortBy === opt.value 
+                                ? "bg-foreground text-background" 
+                                : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                            }`}
+                          >
+                            <Icon className="w-3 h-3" />
+                            {opt.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                <DrawerFooter className="pt-2 border-t border-border/40">
+                  <Button onClick={applyFilters} className="w-full h-12 rounded-full font-medium">
+                    Show Results
+                  </Button>
+                </DrawerFooter>
+              </DrawerContent>
+            </Drawer>
           </div>
         </div>
 
         {/* Categories */}
-        <ScrollArea className="w-full border-t border-border/30">
-          <div className="flex gap-2 px-4 py-3">
+        <ScrollArea className="w-full">
+          <div className="flex gap-1.5 px-4 py-2.5">
             {CATEGORIES.map((cat) => {
               const Icon = cat.icon;
               const isActive = activeCategory === cat.id;
@@ -187,8 +454,10 @@ const Home = () => {
                   key={cat.id}
                   onClick={() => setActiveCategory(cat.id)}
                   className={`
-                    flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all
-                    ${isActive ? "bg-foreground text-background" : "bg-muted/30 text-muted-foreground"}
+                    flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-all
+                    ${isActive 
+                      ? "bg-foreground text-background shadow-sm" 
+                      : "bg-muted/30 text-muted-foreground hover:bg-muted/50"}
                   `}
                   data-testid={`category-${cat.id}`}
                 >
@@ -200,32 +469,23 @@ const Home = () => {
           </div>
           <ScrollBar orientation="horizontal" className="invisible" />
         </ScrollArea>
-
-        {/* Filters */}
-        <div className="flex gap-2 px-4 pb-3">
-          <button
-            onClick={() => setOpenNow(!openNow)}
-            className={`
-              px-3 py-1.5 rounded-lg text-xs font-medium transition-all
-              ${openNow ? "bg-foreground/10 text-foreground" : "text-muted-foreground"}
-            `}
-            data-testid="open-now-filter"
-          >
-            Open Now {openNow && "×"}
-          </button>
-        </div>
       </header>
 
       {/* Content */}
-      <main className="px-4 pt-2">
+      <main className="px-4 pt-4">
         {viewMode === "feed" ? (
           <div className="space-y-3">
             {loading ? (
-              [...Array(4)].map((_, i) => <div key={i} className="h-56 rounded-2xl bg-muted/30 animate-pulse" />)
+              [...Array(4)].map((_, i) => (
+                <div key={i} className="h-64 rounded-3xl bg-muted/30 animate-pulse" />
+              ))
             ) : places.length === 0 ? (
-              <div className="text-center py-16 text-muted-foreground">
-                <p className="text-4xl mb-4">🗺️</p>
-                <p>No places found</p>
+              <div className="text-center py-20">
+                <div className="w-16 h-16 rounded-full bg-muted/30 flex items-center justify-center mx-auto mb-4">
+                  <MapPin className="w-7 h-7 text-muted-foreground" />
+                </div>
+                <p className="text-muted-foreground font-medium">No places found</p>
+                <p className="text-sm text-muted-foreground/70 mt-1">Try adjusting your filters</p>
               </div>
             ) : (
               places.map((place, i) => (
@@ -234,13 +494,14 @@ const Home = () => {
                   place={place}
                   onClick={() => navigate(`/place/${place.id}`)}
                   savedPlaces={user?.saved_places || []}
-                  className={`animate-fade-in stagger-${Math.min(i + 1, 5)}`}
+                  className={`animate-fade-in`}
+                  style={{ animationDelay: `${i * 0.05}s` }}
                 />
               ))
             )}
           </div>
         ) : (
-          <div className="h-[calc(100vh-260px)] rounded-2xl overflow-hidden">
+          <div className="h-[calc(100vh-220px)] rounded-3xl overflow-hidden shadow-lg">
             <MapView places={places} userLocation={userLocation} onPlaceClick={(id) => navigate(`/place/${id}`)} />
           </div>
         )}
