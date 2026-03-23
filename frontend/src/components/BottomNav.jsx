@@ -27,17 +27,22 @@ const BottomNav = () => {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 safe-bottom"
+      className="fixed bottom-0 left-0 right-0 z-50 pwa-bottom-nav"
       data-testid="bottom-nav"
+      style={{
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        paddingLeft: 'env(safe-area-inset-left, 0px)',
+        paddingRight: 'env(safe-area-inset-right, 0px)',
+      }}
     >
-      {/* Gradient fade */}
-      <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-background via-background/95 to-transparent pointer-events-none" />
+      {/* Gradient fade - taller for better visual */}
+      <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-background via-background/95 to-transparent pointer-events-none" />
       
-      {/* Nav bar */}
-      <div className="relative px-2 pb-4">
+      {/* Nav bar container */}
+      <div className="relative px-3 pb-2 sm:pb-3">
         <div className="max-w-lg mx-auto">
           <div className="bg-card/95 backdrop-blur-2xl rounded-2xl border border-border/20 shadow-lg shadow-black/5">
-            <div className="flex justify-around items-center h-14">
+            <div className="flex justify-around items-center h-16 sm:h-14 px-1">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const active = isActive(item.path);
@@ -46,20 +51,20 @@ const BottomNav = () => {
                   <button
                     key={item.id}
                     onClick={() => navigate(item.path)}
-                    className="flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-all"
+                    className="flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all touch-manipulation active:scale-95"
                     data-testid={`nav-${item.id}`}
                   >
                     <div className={`
-                      relative flex items-center justify-center w-8 h-6 rounded-lg transition-all
+                      relative flex items-center justify-center w-10 h-7 sm:w-8 sm:h-6 rounded-xl transition-all
                       ${active ? "bg-foreground/10" : ""}
                     `}>
-                      <Icon className={`w-[18px] h-[18px] transition-all ${
+                      <Icon className={`w-5 h-5 sm:w-[18px] sm:h-[18px] transition-all ${
                         active 
                           ? "text-foreground stroke-[2.5px]" 
                           : "text-muted-foreground"
                       }`} />
                     </div>
-                    <span className={`text-[10px] font-medium transition-colors ${
+                    <span className={`text-[11px] sm:text-[10px] font-medium transition-colors ${
                       active ? "text-foreground" : "text-muted-foreground"
                     }`}>
                       {item.label}

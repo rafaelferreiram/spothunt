@@ -208,27 +208,114 @@
     }
 }
 
-/* PWA Enhancements */
+/* PWA Enhancements - Safe Areas for Notch & Dynamic Island */
 @supports (padding: max(0px)) {
     .safe-area-top {
-        padding-top: max(0.5rem, env(safe-area-inset-top));
+        padding-top: max(1rem, env(safe-area-inset-top));
     }
     .safe-area-bottom {
-        padding-bottom: max(1rem, env(safe-area-inset-bottom));
+        padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
     }
+    .safe-area-left {
+        padding-left: max(1rem, env(safe-area-inset-left));
+    }
+    .safe-area-right {
+        padding-right: max(1rem, env(safe-area-inset-right));
+    }
+    .safe-area-all {
+        padding-top: max(0.5rem, env(safe-area-inset-top));
+        padding-bottom: max(1rem, env(safe-area-inset-bottom));
+        padding-left: max(1rem, env(safe-area-inset-left));
+        padding-right: max(1rem, env(safe-area-inset-right));
+    }
+}
+
+/* Dynamic Island / Notch Header Adjustments */
+.pwa-header {
+    padding-top: env(safe-area-inset-top, 0);
+    padding-left: env(safe-area-inset-left, 0);
+    padding-right: env(safe-area-inset-right, 0);
+}
+
+/* Bottom Navigation Safe Area */
+.pwa-bottom-nav {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    padding-left: env(safe-area-inset-left, 0);
+    padding-right: env(safe-area-inset-right, 0);
 }
 
 /* Fullscreen PWA adjustments */
 @media (display-mode: fullscreen), (display-mode: standalone) {
     html {
         height: 100%;
+        /* Prevent overscroll bounce */
+        overscroll-behavior: none;
     }
     body {
         min-height: 100vh;
         min-height: -webkit-fill-available;
+        min-height: 100dvh;
+        /* Prevent pull-to-refresh */
+        overscroll-behavior-y: contain;
     }
-    .mobile-header {
+    
+    /* Add top padding for status bar/notch/Dynamic Island */
+    .pwa-safe-header {
+        padding-top: calc(env(safe-area-inset-top, 20px) + 0.5rem);
+    }
+    
+    /* Sticky headers need extra space */
+    .sticky {
+        top: env(safe-area-inset-top, 0);
+    }
+    
+    /* Main content area */
+    .pwa-main-content {
         padding-top: env(safe-area-inset-top, 0);
+        min-height: calc(100vh - env(safe-area-inset-top, 0) - env(safe-area-inset-bottom, 0));
+        min-height: calc(100dvh - env(safe-area-inset-top, 0) - env(safe-area-inset-bottom, 0));
+    }
+}
+
+/* iPhone notch specific (iPhone X, 11, 12, 13, 14) */
+@media only screen 
+    and (device-width: 375px) 
+    and (device-height: 812px) 
+    and (-webkit-device-pixel-ratio: 3),
+    only screen 
+    and (device-width: 390px) 
+    and (device-height: 844px) 
+    and (-webkit-device-pixel-ratio: 3),
+    only screen 
+    and (device-width: 393px) 
+    and (device-height: 852px) 
+    and (-webkit-device-pixel-ratio: 3),
+    only screen
+    and (device-width: 414px) 
+    and (device-height: 896px) 
+    and (-webkit-device-pixel-ratio: 2),
+    only screen 
+    and (device-width: 428px) 
+    and (device-height: 926px) 
+    and (-webkit-device-pixel-ratio: 3),
+    only screen 
+    and (device-width: 430px) 
+    and (device-height: 932px) 
+    and (-webkit-device-pixel-ratio: 3) {
+    
+    /* Dynamic Island devices (iPhone 14 Pro, 15 Pro) need more top space */
+    @media (display-mode: standalone) {
+        .pwa-safe-header {
+            padding-top: calc(env(safe-area-inset-top, 47px) + 0.75rem);
+        }
+    }
+}
+
+/* Mobile landscape safe areas */
+@media screen and (orientation: landscape) {
+    .pwa-safe-header {
+        padding-left: env(safe-area-inset-left, 0);
+        padding-right: env(safe-area-inset-right, 0);
     }
 }
 
@@ -241,6 +328,38 @@
     .touch-target {
         min-height: 48px;
         min-width: 48px;
+    }
+    
+    /* Larger touch targets on mobile */
+    .nav-button {
+        min-height: 48px;
+        min-width: 48px;
+    }
+}
+
+/* Mobile responsive utilities */
+@media screen and (max-width: 640px) {
+    /* Prevent horizontal overflow */
+    body {
+        overflow-x: hidden;
+    }
+    
+    /* Better mobile typography */
+    h1 {
+        font-size: 1.75rem;
+        line-height: 1.2;
+    }
+    
+    h2 {
+        font-size: 1.25rem;
+        line-height: 1.3;
+    }
+    
+    /* Full width cards on mobile */
+    .mobile-full-width {
+        margin-left: -1rem;
+        margin-right: -1rem;
+        border-radius: 0;
     }
 }
 

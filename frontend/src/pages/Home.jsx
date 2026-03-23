@@ -281,10 +281,13 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24" data-testid="home-page">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/40">
-        <div className="px-4 pt-4 pb-3 space-y-3">
+    <div className="min-h-screen min-h-[100dvh] bg-background pb-28 sm:pb-24" data-testid="home-page">
+      {/* Header with safe area for notch/Dynamic Island */}
+      <header 
+        className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/40 pwa-safe-header"
+        style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
+      >
+        <div className="px-4 pb-3 space-y-3">
           {/* Top Row: Location & View Toggle */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5 flex-1 min-w-0">

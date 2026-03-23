@@ -136,8 +136,8 @@ const Landing = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background overflow-hidden" data-testid="landing-page">
-      <div className="relative min-h-screen flex flex-col">
+    <div className="min-h-screen min-h-[100dvh] bg-background overflow-hidden" data-testid="landing-page">
+      <div className="relative min-h-screen min-h-[100dvh] flex flex-col">
         {/* Background */}
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-0 bg-gradient-to-br from-muted/50 via-background to-background" />
@@ -145,10 +145,18 @@ const Landing = () => {
           <div className="absolute bottom-0 left-0 w-80 h-80 bg-primary/5 rounded-full blur-3xl" />
         </div>
 
-        {/* Content */}
-        <div className="relative z-10 flex-1 flex flex-col px-6">
+        {/* Content with safe areas */}
+        <div 
+          className="relative z-10 flex-1 flex flex-col px-6"
+          style={{ 
+            paddingTop: 'max(1.5rem, env(safe-area-inset-top))',
+            paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))',
+            paddingLeft: 'max(1.5rem, env(safe-area-inset-left))',
+            paddingRight: 'max(1.5rem, env(safe-area-inset-right))'
+          }}
+        >
           {/* Header */}
-          <header className="pt-6 pb-4">
+          <header className="pb-4">
             <div className="flex items-center gap-2.5">
               <div className="w-10 h-10 rounded-2xl bg-foreground flex items-center justify-center">
                 <MapPin className="w-5 h-5 text-background" />

@@ -113,10 +113,13 @@ const FavoritesPage = () => {
   const totalCount = savedPlaces.length + (cannabisFavorites.strains?.length || 0) + (cannabisFavorites.dispensaries?.length || 0);
 
   return (
-    <div className="min-h-screen bg-background pb-24" data-testid="favorites-page">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border/40">
-        <div className="px-4 pt-6 pb-4 space-y-4">
+    <div className="min-h-screen min-h-[100dvh] bg-background pb-28 sm:pb-24" data-testid="favorites-page">
+      {/* Header with safe area for notch/Dynamic Island */}
+      <header 
+        className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border/40 pwa-safe-header"
+        style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
+      >
+        <div className="px-4 pb-4 space-y-4">
           {/* Title Row */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">

@@ -60,9 +60,12 @@ const Profile = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24" data-testid="profile-page">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border/50">
+    <div className="min-h-screen min-h-[100dvh] bg-background pb-28 sm:pb-24" data-testid="profile-page">
+      {/* Header with safe area for notch/Dynamic Island */}
+      <header 
+        className="sticky top-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border/50 pwa-safe-header"
+        style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
+      >
         <div className="px-4 py-3 flex items-center justify-between">
           <Button
             variant="ghost"

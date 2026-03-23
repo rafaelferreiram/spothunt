@@ -314,10 +314,13 @@ const ShufflePage = () => {
   const hasMore = currentIndex < places.length;
 
   return (
-    <div className="min-h-screen bg-background pb-24" data-testid="shuffle-page">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/40">
-        <div className="px-4 pt-4 pb-3">
+    <div className="min-h-screen min-h-[100dvh] bg-background pb-28 sm:pb-24" data-testid="shuffle-page">
+      {/* Header with safe area for notch/Dynamic Island */}
+      <header 
+        className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/40 pwa-safe-header"
+        style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
+      >
+        <div className="px-4 pb-3">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2.5">
               <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center shadow-lg shadow-pink-500/25">
