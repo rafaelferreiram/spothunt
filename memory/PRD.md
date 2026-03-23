@@ -4,10 +4,13 @@
 Build CityBlend - a hyperlocal discovery app for travelers. A mobile-first discovery app that surfaces personalized recommendations for places to eat, drink, explore, and experience based on real-time location, a built-in taste profile, and contextual trip intent.
 
 **Update (Session 2)**: Added cannabis/weed dispensary discovery and strain information feature with real data.
+**Update (Session 4)**: Integrated Google Places API for real-time place discovery and Google Distance Matrix API for accurate travel times.
 
 ## User Choices
-- **Maps Provider**: Leaflet + OpenStreetMap (free, no API key)
-- **Places Data**: Mock data (15 NYC places hardcoded)
+- **Maps Provider**: Leaflet + OpenStreetMap for display, Google APIs for data
+- **Places Data**: Real-time Google Places API (with mock fallback)
+- **Travel Times**: Google Distance Matrix API (actual walking/driving times)
+- **Geocoding**: Google Geocoding API for location names
 - **Cannabis Data**: Real data from Kushy open source dataset (9,523 strains, 2,334 dispensaries)
 - **Authentication**: Emergent Google Auth (free social login)
 - **Theme**: Both dark and light mode with "Organic Urban" design
@@ -98,39 +101,59 @@ Build CityBlend - a hyperlocal discovery app for travelers. A mobile-first disco
 - **Mobile-First**: Clean, minimalistic responsive design
 - **External Links**: Integration with Leafly and Weedmaps for more info
 
+### March 23, 2026 (Session 4)
+- **Google Places API**: Real-time nearby place discovery worldwide
+- **Distance Matrix API**: Actual walking and driving times from Google
+- **Geocoding API**: Location name resolution from coordinates
+- **Travel Times**: Real walk_mins, drive_mins, walk_text, drive_text
+- **Fixed Integration**: Backend properly calls Google APIs and enriches places
+- **100% Test Pass**: All 15 backend tests pass, full frontend working
+
 ## Prioritized Backlog
 
 ### P0 - Critical (Next)
-- None - Core features complete
+- None - Core features complete with Google APIs
 
 ### P1 - High Priority
-- [ ] Add more cities for places (Paris, London, Tokyo)
-- [ ] Real-time "Open Now" based on current time
-- [ ] Foursquare API for real place data
+- [ ] "I'm Visiting" mode - preview places in different cities
+- [ ] Day Plan Builder - drag-and-drop itinerary
 - [ ] Cannabis dispensary reviews
 
 ### P2 - Medium Priority
 - [ ] Location search / "I'm visiting X city" feature
 - [ ] Trip planning mode with date range
 - [ ] Photo carousel on place cards
-- [ ] User reviews/tips
 - [ ] Share place/itinerary
 - [ ] Strain comparison feature
 
 ### P3 - Nice to Have
 - [ ] AI chat "find me a cozy spot for a date"
 - [ ] Collaborative trip planning
-- [ ] Day plan / itinerary builder
-- [ ] Leafly API integration (when approved)
-- [ ] Cannabis club membership tracking
+- [ ] Push notifications for smart alerts
+- [ ] AR camera mode
+- [ ] Strain Journal for cannabis users
 
 ## Next Tasks
-1. Consider adding Foursquare API for real place data
-2. Add cannabis dispensary reviews/ratings
-3. Implement strain favorites/bookmarks
-4. Add more EU cannabis clubs (Germany legal since 2024)
+1. Implement "I'm Visiting" feature for city preview
+2. Add Day Plan Builder with drag-and-drop
+3. Cannabis dispensary reviews
+4. Social sharing features
 
 ## Technical Notes
+
+### Google API Endpoints
+- `GET /api/places/?lat={lat}&lng={lng}` - Real nearby places from Google
+- `GET /api/places/{place_id}` - Place details (supports google_ prefix IDs)
+- `GET /api/places/nearby` - Direct Google Places search
+- `GET /api/places/location?lat={lat}&lng={lng}` - Geocoding for location name
+
+### Distance Matrix Integration
+Places are enriched with actual travel times:
+- `walk_mins` - Actual walking time from Google
+- `drive_mins` - Actual driving time from Google
+- `walk_text` - Human readable (e.g., "11 mins")
+- `drive_text` - Human readable (e.g., "8 mins")
+- `distance_m` - Walking distance in meters
 
 ### Cannabis API Endpoints
 - `GET /api/cannabis/strains` - List strains with filters
