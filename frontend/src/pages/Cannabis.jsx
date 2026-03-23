@@ -775,35 +775,37 @@ const StrainRow = ({ strain, onClick, isFavorite = false, onToggleFavorite }) =>
   );
 };
 
-// Feed Card View for Dispensaries (similar to FeedCard)
+// Feed Card View for Dispensaries (consistent with FeedCard design)
 const DispensaryFeedCard = ({ dispensary, onClick, formatDistance, isFavorite = false, onToggleFavorite }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
-  const flags = { US: "🇺🇸", NL: "🇳🇱", ES: "🇪🇸", CA: "🇨🇦", TH: "🇹🇭", DE: "🇩🇪", PT: "🇵🇹", BR: "🇧🇷", UY: "🇺🇾" };
+  const flags = { US: "🇺🇸", NL: "🇳🇱", ES: "🇪🇸", CA: "🇨🇦", TH: "🇹🇭", DE: "🇩🇪", PT: "🇵🇹", BR: "🇧🇷", UY: "🇺🇾", AT: "🇦🇹", CH: "🇨🇭", BE: "🇧🇪", IT: "🇮🇹", FR: "🇫🇷", GB: "🇬🇧", CZ: "🇨🇿", PL: "🇵🇱", GR: "🇬🇷" };
   
-  // Generate a consistent image based on the dispensary name for variety
-  const getImage = () => {
+  // Cannabis-related images for dispensaries
+  const getImageUrl = () => {
     const images = [
-      "https://images.unsplash.com/photo-1616690710400-a16d146927c5?w=800&q=80", // Cannabis store
       "https://images.unsplash.com/photo-1603909223429-69bb7101f420?w=800&q=80", // Cannabis buds
-      "https://images.unsplash.com/photo-1585063560370-1519bcea7882?w=800&q=80", // Cannabis plant
-      "https://images.unsplash.com/photo-1536819114556-1e10f967fb61?w=800&q=80", // Dispensary interior
-      "https://images.unsplash.com/photo-1587404105811-d33b1bb2a87b?w=800&q=80", // Cannabis leaf
+      "https://images.unsplash.com/photo-1536819114556-1e10f967fb61?w=800&q=80", // Dispensary products
+      "https://images.unsplash.com/photo-1516709999172-b5ef73c6e7a8?w=800&q=80", // CBD oils
+      "https://images.unsplash.com/photo-1457573557536-cb47d0a6eb49?w=800&q=80", // Nature/plants
+      "https://images.unsplash.com/photo-1501004318641-b39e6451bec6?w=800&q=80", // Green plants
+      "https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=800&q=80", // Storefront
     ];
-    const index = dispensary.name.length % images.length;
-    return images[index];
+    // Use dispensary name for consistent image per card
+    const hash = dispensary.name.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+    return images[hash % images.length];
   };
 
   const handleMaps = (e) => {
     e.stopPropagation();
-    const { lat, lng } = dispensary.coordinates || {};
-    if (lat && lng) {
-      window.open(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`, "_blank");
+    if (dispensary.maps_deep_link) {
+      window.open(dispensary.maps_deep_link, "_blank");
+    } else {
+      const { lat, lng } = dispensary.coordinates || {};
+      if (lat && lng) {
+        window.open(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`, "_blank");
+      }
     }
   };
-
-  // Estimate walk/drive times based on distance
-  const walkMins = dispensary.distance_m ? Math.round(dispensary.distance_m / 80) : null;
-  const driveMins = dispensary.distance_m ? Math.round(dispensary.distance_m / 400) : null;
 
   return (
     <div
@@ -817,7 +819,7 @@ const DispensaryFeedCard = ({ dispensary, onClick, formatDistance, isFavorite = 
           <div className="absolute inset-0 bg-muted animate-pulse" />
         )}
         <img
-          src={getImage()}
+          src={getImageUrl()}
           alt={dispensary.name}
           className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
           onLoad={() => setImageLoaded(true)}
@@ -826,7 +828,27 @@ const DispensaryFeedCard = ({ dispensary, onClick, formatDistance, isFavorite = 
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
-        {/* Country Flag Badge */}
+        {/* Top Actions */}
+        <div className="absolute top-3 right-3 flex gap-2">
+          {onToggleFavorite && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleFavorite();
+              }}
+              className={`
+                w-9 h-9 rounded-full flex items-center justify-center transition-all backdrop-blur-md
+                ${isFavorite 
+                  ? "bg-white text-rose-500" 
+                  : "bg-white/20 text-white hover:bg-white/30"}
+              `}
+            >
+              <Heart className={`w-4 h-4 ${isFavorite ? "fill-current" : ""}`} />
+            </button>
+          )}
+        </div>
+
+        {/* Country Badge */}
         <div className="absolute top-3 left-3">
           <span className="px-2.5 py-1 rounded-full bg-white/95 backdrop-blur-sm text-xs font-semibold text-foreground flex items-center gap-1">
             <span>{flags[dispensary.country] || "📍"}</span>
@@ -836,35 +858,27 @@ const DispensaryFeedCard = ({ dispensary, onClick, formatDistance, isFavorite = 
 
         {/* Content on Image */}
         <div className="absolute bottom-0 left-0 right-0 p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-white text-lg leading-tight truncate">
-                {dispensary.name}
-              </h3>
-              <p className="text-white/70 text-sm mt-0.5 truncate">
-                {dispensary.city}{dispensary.state ? `, ${dispensary.state}` : ""}
-              </p>
-            </div>
-          </div>
+          <h3 className="font-semibold text-white text-lg leading-tight truncate">
+            {dispensary.name}
+          </h3>
+          <p className="text-white/70 text-sm mt-0.5 truncate">
+            {dispensary.city}{dispensary.state ? `, ${dispensary.state}` : ""}
+          </p>
 
           {/* Stats Row */}
-          <div className="flex items-center gap-3 mt-2.5 text-sm text-white/90">
+          <div className="flex items-center gap-3 mt-2 text-sm text-white/90">
             {dispensary.rating > 0 && (
               <span className="flex items-center gap-1">
                 <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                 <span className="font-medium">{dispensary.rating.toFixed(1)}</span>
               </span>
             )}
+            <span className="text-white/60">{dispensary.type || "Dispensary"}</span>
             {dispensary.distance_m && (
-              <span className="flex items-center gap-1 text-white/70">
-                <MapPin className="w-3.5 h-3.5" />
+              <span className="text-white/60">
                 {formatDistance(dispensary.distance_m)}
               </span>
             )}
-            <span className="text-emerald-400 flex items-center gap-1">
-              <CannabisLeafIcon className="w-3.5 h-3.5" />
-              {dispensary.type || "Dispensary"}
-            </span>
           </div>
         </div>
       </div>
@@ -872,41 +886,27 @@ const DispensaryFeedCard = ({ dispensary, onClick, formatDistance, isFavorite = 
       {/* Bottom Info Bar */}
       <div className="flex items-center justify-between px-4 py-3 bg-card border-t border-border/30">
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
-          {walkMins && (
-            <span className="flex items-center gap-1.5" title="Walking time">
+          {dispensary.walk_mins && (
+            <span className="flex items-center gap-1.5">
               <Footprints className="w-3.5 h-3.5" />
-              <span className="font-medium">{walkMins} min</span>
+              <span>{dispensary.walk_mins} min</span>
             </span>
           )}
-          {driveMins && (
-            <span className="flex items-center gap-1.5" title="Driving time">
+          {dispensary.drive_mins && (
+            <span className="flex items-center gap-1.5">
               <Car className="w-3.5 h-3.5" />
-              <span className="font-medium">{driveMins} min</span>
+              <span>{dispensary.drive_mins} min</span>
             </span>
           )}
         </div>
         
-        <div className="flex items-center gap-2">
-          {onToggleFavorite && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleFavorite();
-              }}
-              className="flex items-center justify-center w-8 h-8 rounded-full bg-foreground/5 hover:bg-foreground/10 transition-colors"
-            >
-              <Heart className={`w-4 h-4 ${isFavorite ? "fill-red-500 text-red-500" : "text-muted-foreground"}`} />
-            </button>
-          )}
-          <button
-            onClick={handleMaps}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-foreground/5 hover:bg-foreground/10 text-xs font-medium transition-colors"
-            data-testid={`maps-btn-${dispensary.shop_id}`}
-          >
-            <Navigation className="w-3.5 h-3.5" />
-            <span>Directions</span>
-          </button>
-        </div>
+        <button
+          onClick={handleMaps}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-foreground text-background text-xs font-medium transition-colors hover:bg-foreground/90"
+        >
+          <Navigation className="w-3.5 h-3.5" />
+          Directions
+        </button>
       </div>
     </div>
   );

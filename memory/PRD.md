@@ -148,6 +148,11 @@ Build SpotHunt - a hyperlocal discovery app for travelers. A mobile-first discov
 - **Header Icons**: Added profile (👤) and favorites (❤️) icons to header on Home, Shuffle, and Cannabis pages
 - **Dedicated Favorites Page**: New /favorites page with Places and Cannabis tabs to view all saved items
 - **Quick Navigation**: One-tap access to profile and favorites from any main screen
+- **Weeds Spots Feed Design**: Dispensary cards now match FeedCard style with:
+  - Cannabis-themed images from Unsplash
+  - Country badge, favorite button, rating, type, distance
+  - Walk/drive time and Directions button
+  - Consistent minimalist design with rest of app
 - **App Renamed**: "CityBlend" → "SpotHunt" across all components
 - **New Cannabis Icon**: Classic 7-leaflet silhouette design (matches user's reference image)
 - **Food Type Filters**: Added subcategory filters for restaurants - Italian, Pizza, Burger, Sushi, Mexican, BBQ, Asian, Seafood, Steakhouse, Vegan

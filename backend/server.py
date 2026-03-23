@@ -1382,6 +1382,8 @@ async def get_dispensaries(
             {"city": {"$regex": search, "$options": "i"}}
         ]
     
+    api_key = os.environ.get('GOOGLE_MAPS_API_KEY')
+    
     # If location provided, fetch ALL shops and filter by distance
     if lat and lng:
         # Fetch all shops to calculate distances (shops DB isn't huge)
@@ -1401,9 +1403,9 @@ async def get_dispensaries(
             else:
                 disp["distance_m"] = float("inf")
             
-            # Add Google Places photo if place_id exists
-            if disp.get("place_id") and os.environ.get('GOOGLE_MAPS_API_KEY'):
-                disp["photo_url"] = f"https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference={disp.get('photo_ref', '')}&key={os.environ.get('GOOGLE_MAPS_API_KEY')}" if disp.get('photo_ref') else None
+            # Generate Google Street View photo URL
+            if api_key and coords.get("lat") and coords.get("lng"):
+                disp["static_map_url"] = f"https://maps.googleapis.com/maps/api/streetview?size=800x600&location={coords['lat']},{coords['lng']}&fov=90&heading=235&pitch=10&key={api_key}"
         
         # Sort by distance
         all_dispensaries.sort(key=lambda x: x.get("distance_m", float("inf")))
