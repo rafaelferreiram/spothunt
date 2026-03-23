@@ -16,6 +16,22 @@ import {
   Moon
 } from "lucide-react";
 
+// Cannabis leaf SVG icon
+const CannabisLeafIcon = ({ className }) => (
+  <svg 
+    viewBox="0 0 24 24" 
+    fill="currentColor" 
+    className={className}
+  >
+    <path d="M12 2C12 2 9 7 12 12C15 7 12 2 12 2Z" />
+    <path d="M12 12C9.5 8 6 6 6 6C8 10 12 12 12 12Z" />
+    <path d="M12 12C14.5 8 18 6 18 6C16 10 12 12 12 12Z" />
+    <path d="M12 12C7 9 2 10 2 10C5 11 9 11 12 12Z" />
+    <path d="M12 12C17 9 22 10 22 10C19 11 15 11 12 12Z" />
+    <path d="M12 12V22" stroke="currentColor" strokeWidth="2" fill="none" />
+  </svg>
+);
+
 const STRAIN_TYPES = [
   { id: "all", name: "All", color: "bg-foreground" },
   { id: "sativa", name: "Sativa", color: "bg-amber-500", emoji: "☀️" },
@@ -106,14 +122,16 @@ const Cannabis = () => {
           {/* Title Row */}
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="font-heading text-2xl font-semibold tracking-tight">Greens</h1>
+              <h1 className="font-heading text-2xl font-semibold tracking-tight">Weeds</h1>
               {stats && (
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {stats.total_strains.toLocaleString()} strains · {stats.total_dispensaries.toLocaleString()} spots
+                  {stats.total_strains.toLocaleString()} strains · {stats.total_dispensaries.toLocaleString()} spots nearby
                 </p>
               )}
             </div>
-            <div className="text-3xl">🌿</div>
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+              <CannabisLeafIcon className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+            </div>
           </div>
 
           {/* Search */}

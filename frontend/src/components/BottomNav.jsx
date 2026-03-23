@@ -1,5 +1,25 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, Heart, User, Leaf } from "lucide-react";
+import { Home, Heart, User, Beer } from "lucide-react";
+
+// Cannabis leaf SVG icon component
+const CannabisLeaf = ({ className }) => (
+  <svg 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path d="M12 22V12" />
+    <path d="M12 12C12 12 8 10 6 6C8.5 7 10.5 8 12 12" />
+    <path d="M12 12C12 12 16 10 18 6C15.5 7 13.5 8 12 12" />
+    <path d="M12 12C12 12 9 7 12 2C15 7 12 12 12 12" />
+    <path d="M12 12C12 12 6 9 2 10C5 11 9 11 12 12" />
+    <path d="M12 12C12 12 18 9 22 10C19 11 15 11 12 12" />
+  </svg>
+);
 
 const BottomNav = () => {
   const location = useLocation();
@@ -7,7 +27,7 @@ const BottomNav = () => {
 
   const navItems = [
     { id: "home", path: "/home", icon: Home, label: "Explore" },
-    { id: "cannabis", path: "/cannabis", icon: Leaf, label: "Greens" },
+    { id: "cannabis", path: "/cannabis", icon: CannabisLeaf, label: "Weeds" },
     { id: "saved", path: "/saved", icon: Heart, label: "Saved" },
     { id: "profile", path: "/profile", icon: User, label: "Profile" },
   ];

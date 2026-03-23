@@ -24,7 +24,7 @@ import {
   MapPin, 
   Sparkles,
   UtensilsCrossed,
-  Wine,
+  Beer,
   Landmark,
   Mountain,
   Trees,
@@ -44,7 +44,7 @@ import {
 const CATEGORIES = [
   { id: "all", name: "For You", icon: Sparkles },
   { id: "restaurant", name: "Eat", icon: UtensilsCrossed },
-  { id: "bar", name: "Drink", icon: Wine },
+  { id: "bar", name: "Drink", icon: Beer },
   { id: "museum", name: "Culture", icon: Landmark },
   { id: "attraction", name: "Views", icon: Mountain },
   { id: "outdoors", name: "Nature", icon: Trees },

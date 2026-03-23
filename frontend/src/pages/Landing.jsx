@@ -2,7 +2,18 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/App";
 import { Button } from "@/components/ui/button";
-import { MapPin, Sparkles, Navigation, Coffee, Wine, Landmark, Leaf } from "lucide-react";
+import { MapPin, Sparkles, Navigation, Coffee, Beer, Landmark } from "lucide-react";
+
+// Cannabis leaf icon
+const CannabisIcon = ({ className }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path d="M12 2C12 2 9 7 12 12C15 7 12 2 12 2Z" />
+    <path d="M12 12C9.5 8 6 6 6 6C8 10 12 12 12 12Z" />
+    <path d="M12 12C14.5 8 18 6 18 6C16 10 12 12 12 12Z" />
+    <path d="M12 12C7 9 2 10 2 10C5 11 9 11 12 12Z" />
+    <path d="M12 12C17 9 22 10 22 10C19 11 15 11 12 12Z" />
+  </svg>
+);
 
 const Landing = () => {
   const { user, loading } = useAuth();
@@ -76,10 +87,10 @@ const Landing = () => {
               {/* Feature Tags */}
               <div className="flex flex-wrap gap-2 animate-fade-in" style={{ animationDelay: '200ms' }}>
                 <FeatureTag icon={Coffee} label="Cafes" />
-                <FeatureTag icon={Wine} label="Bars" />
+                <FeatureTag icon={Beer} label="Bars" />
                 <FeatureTag icon={Landmark} label="Culture" />
                 <FeatureTag icon={Navigation} label="Walking" />
-                <FeatureTag icon={Leaf} label="Greens" />
+                <FeatureTag icon={CannabisIcon} label="Weeds" />
               </div>
 
               {/* Stats */}
