@@ -1,278 +1,343 @@
-# 🌆 CityBlend
+<p align="center">
+  <img src="https://img.shields.io/badge/React-18.x-61DAFB?style=for-the-badge&logo=react&logoColor=white" alt="React"/>
+  <img src="https://img.shields.io/badge/FastAPI-0.100+-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI"/>
+  <img src="https://img.shields.io/badge/MongoDB-6.0+-47A248?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB"/>
+  <img src="https://img.shields.io/badge/PWA-Ready-5A0FC8?style=for-the-badge&logo=pwa&logoColor=white" alt="PWA"/>
+</p>
 
-**Discover amazing places wherever you go** - A hyperlocal discovery app for travelers and explorers.
+<h1 align="center">
+  <br>
+  <img src="https://api.iconify.design/mdi:map-marker-radius.svg?color=%23000000" width="80" alt="SpotHunt Logo"/>
+  <br>
+  SpotHunt
+  <br>
+</h1>
 
-CityBlend helps you find the best restaurants, bars, cafes, cultural spots, and cannabis dispensaries near you with real-time data from Google Maps.
+<h4 align="center">Discover your next favorite spot - A hyperlocal discovery app for travelers and explorers</h4>
+
+<p align="center">
+  <a href="#-features">Features</a> •
+  <a href="#-screenshots">Screenshots</a> •
+  <a href="#-tech-stack">Tech Stack</a> •
+  <a href="#-getting-started">Getting Started</a> •
+  <a href="#-api-reference">API</a> •
+  <a href="#-cannabis-database">Cannabis DB</a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Places-Google%20Maps%20API-4285F4?style=flat-square&logo=googlemaps" alt="Google Maps"/>
+  <img src="https://img.shields.io/badge/Strains-9,523-22C55E?style=flat-square" alt="Strains"/>
+  <img src="https://img.shields.io/badge/Dispensaries-6,595+-10B981?style=flat-square" alt="Dispensaries"/>
+  <img src="https://img.shields.io/badge/Countries-20+-F59E0B?style=flat-square" alt="Countries"/>
+</p>
+
+---
 
 ## ✨ Features
 
-### 🗺️ Explore
-- **Feed View** - Scroll through nearby places with photos, ratings, and travel times
-- **Map View** - See all spots on an interactive map
-- **Smart Filters** - Filter by distance (1-100km), rating, price, and more
-- **Category Filters** - Food, Drinks, Coffee, Culture, Nature, Markets
+<table>
+<tr>
+<td width="50%">
 
-### 🔥 Shuffle
-- **Tinder-like Discovery** - Swipe right to save, left to skip
-- **Vibe Filters** - Set your mood: Food, Drinks, Coffee, Culture, Nature, or Weeds
-- **Drag or Tap** - Swipe cards or use the action buttons
+### 🗺️ Explore & Discover
+- **Real-time Places** - Powered by Google Places API
+- **Dual View** - Feed cards or interactive map
+- **Smart Filters** - Distance, rating, price, open now
+- **Categories** - Eat, Drink, Smoke, Culture, Nature, Coffee
 
-### 🌿 Weeds
-- **6,030+ Cannabis Spots** - CBD shops, dispensaries, coffeeshops worldwide
-- **9,523 Strains** - Search strains by effects, flavors, and type
-- **Real Data** - Sourced from Google Maps for accuracy
-- **Coverage**: USA (4,790), Spain (237), Germany (176), Netherlands (147), Portugal (93), + 15 more countries
+### 🔥 Shuffle Mode
+- **Tinder-style Discovery** - Swipe right to save
+- **Vibe Filters** - Match your mood
+- **One-tap Actions** - Like, skip, or get directions
 
-### 📍 Real-Time Data
-- **Google Places API** - Real nearby places, not mock data
-- **Google Distance Matrix** - Actual walking and driving times
-- **User Location** - Automatic location detection
+</td>
+<td width="50%">
 
-### 💾 Save & Review
-- **Save Places** - Build your personal favorites list
-- **Add Reviews** - Share your experience with ratings and comments
+### 🌿 Cannabis (Weeds)
+- **9,523 Strains** - Searchable by effects & flavors
+- **6,595+ Dispensaries** - Real photos from Google
+- **Strain Journal** - Log your experiences
+- **Global Coverage** - USA, Europe, South America
+
+### 📱 PWA Ready
+- **Install on Home Screen** - Native app feel
+- **Offline Support** - Service worker caching
+- **iPhone Optimized** - Notch & Dynamic Island safe
+
+</td>
+</tr>
+</table>
+
+---
+
+## 📱 Screenshots
+
+<p align="center">
+  <i>Mobile-first design with PWA support for iOS and Android</i>
+</p>
+
+| Home Feed | Smoke Category | Weeds/Strains | Shuffle Mode |
+|:---------:|:--------------:|:-------------:|:------------:|
+| Discover nearby places with real photos | Cannabis dispensaries with Google Photos | 9,500+ strains database | Tinder-like place discovery |
+
+---
 
 ## 🛠️ Tech Stack
 
+<table>
+<tr>
+<td valign="top" width="33%">
+
 ### Frontend
-- **React 18** - UI framework
-- **Tailwind CSS** - Styling
-- **Shadcn/UI** - Component library
-- **Framer Motion** - Animations (Shuffle swipe)
-- **Leaflet** - Map rendering
-- **Lucide React** - Icons
+<p align="left">
+  <img src="https://img.shields.io/badge/React-18.x-61DAFB?logo=react&logoColor=white" alt="React"/>
+  <br>
+  <img src="https://img.shields.io/badge/Tailwind_CSS-3.x-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind"/>
+  <br>
+  <img src="https://img.shields.io/badge/Shadcn/UI-Components-000000?logo=shadcnui&logoColor=white" alt="Shadcn"/>
+  <br>
+  <img src="https://img.shields.io/badge/Framer_Motion-Animations-0055FF?logo=framer&logoColor=white" alt="Framer"/>
+  <br>
+  <img src="https://img.shields.io/badge/Leaflet-Maps-199900?logo=leaflet&logoColor=white" alt="Leaflet"/>
+</p>
+
+</td>
+<td valign="top" width="33%">
 
 ### Backend
-- **FastAPI** - Python web framework
-- **Motor** - Async MongoDB driver
-- **Pydantic** - Data validation
-- **HTTPX** - Async HTTP client
+<p align="left">
+  <img src="https://img.shields.io/badge/FastAPI-Python-009688?logo=fastapi&logoColor=white" alt="FastAPI"/>
+  <br>
+  <img src="https://img.shields.io/badge/Motor-Async_MongoDB-47A248?logo=mongodb&logoColor=white" alt="Motor"/>
+  <br>
+  <img src="https://img.shields.io/badge/Pydantic-Validation-E92063?logo=pydantic&logoColor=white" alt="Pydantic"/>
+  <br>
+  <img src="https://img.shields.io/badge/HTTPX-Async_HTTP-764ABC?logoColor=white" alt="HTTPX"/>
+</p>
 
-### Database
-- **MongoDB** - Document database
+</td>
+<td valign="top" width="33%">
 
-### APIs
-- **Google Places API** - Place search and details
-- **Google Distance Matrix API** - Travel times
-- **Google Geocoding API** - Location names
-- **Emergent Google Auth** - Social login
+### APIs & Services
+<p align="left">
+  <img src="https://img.shields.io/badge/Google_Places-API-4285F4?logo=googlemaps&logoColor=white" alt="Places"/>
+  <br>
+  <img src="https://img.shields.io/badge/Distance_Matrix-API-4285F4?logo=googlemaps&logoColor=white" alt="Distance"/>
+  <br>
+  <img src="https://img.shields.io/badge/Geocoding-API-4285F4?logo=googlemaps&logoColor=white" alt="Geocoding"/>
+  <br>
+  <img src="https://img.shields.io/badge/Google_Auth-Emergent-EA4335?logo=google&logoColor=white" alt="Auth"/>
+</p>
 
-## 📱 PWA Support
+</td>
+</tr>
+</table>
 
-CityBlend is a Progressive Web App - install it on your phone's home screen for a native app experience!
+---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 18+
-- Python 3.9+
-- MongoDB
-- Google Maps API Key
+
+```bash
+Node.js 18+  •  Python 3.9+  •  MongoDB  •  Google Maps API Key
+```
+
+### Quick Start
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/yourusername/spothunt.git
+cd spothunt
+
+# 2. Setup backend
+cd backend
+pip install -r requirements.txt
+
+# 3. Setup frontend
+cd ../frontend
+yarn install
+
+# 4. Configure environment variables (see below)
+
+# 5. Start the app
+# Backend: uvicorn server:app --host 0.0.0.0 --port 8001 --reload
+# Frontend: yarn start
+```
 
 ### Environment Variables
 
-**Backend** (`/backend/.env`):
+<details>
+<summary><b>Backend</b> <code>/backend/.env</code></summary>
+
 ```env
 MONGO_URL=mongodb://localhost:27017
-DB_NAME=cityblend
+DB_NAME=spothunt
 GOOGLE_MAPS_API_KEY=your_google_api_key
 ```
+</details>
 
-**Frontend** (`/frontend/.env`):
+<details>
+<summary><b>Frontend</b> <code>/frontend/.env</code></summary>
+
 ```env
 REACT_APP_BACKEND_URL=http://localhost:8001
 ```
+</details>
 
-### Installation
+---
 
-1. **Clone the repository**
-```bash
-git clone https://github.com/yourusername/cityblend.git
-cd cityblend
-```
+## 📡 API Reference
 
-2. **Install backend dependencies**
-```bash
-cd backend
-pip install -r requirements.txt
-```
+### 🗺️ Places
 
-3. **Install frontend dependencies**
-```bash
-cd frontend
-yarn install
-```
-
-4. **Import cannabis data** (optional)
-```bash
-cd backend
-python import_cannabis_data.py
-python add_european_shops.py
-python search_usa_shops.py
-```
-
-5. **Start the backend**
-```bash
-cd backend
-uvicorn server:app --host 0.0.0.0 --port 8001 --reload
-```
-
-6. **Start the frontend**
-```bash
-cd frontend
-yarn start
-```
-
-7. **Open in browser**
-```
-http://localhost:3000
-```
-
-## 📡 API Endpoints
-
-### Places
 | Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/places/` | Get nearby places with filters |
-| GET | `/api/places/{id}` | Get place details |
-| GET | `/api/places/location` | Reverse geocode coordinates |
+|:------:|----------|-------------|
+| `GET` | `/api/places/` | Search nearby places with filters |
+| `GET` | `/api/places/{id}` | Get detailed place information |
+| `GET` | `/api/places/search-city` | Search cities by name |
+| `GET` | `/api/places/reverse-geocode` | Get city from coordinates |
 
-### Cannabis
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/cannabis/strains` | Search cannabis strains |
-| GET | `/api/cannabis/strains/{id}` | Get strain details |
-| GET | `/api/cannabis/dispensaries` | Get nearby dispensaries |
-| GET | `/api/cannabis/dispensaries/{id}` | Get dispensary details |
-| GET | `/api/cannabis/stats` | Get database statistics |
+### 🌿 Cannabis
 
-### Reviews
 | Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/reviews/{type}/{id}` | Get reviews for a place |
-| POST | `/api/reviews` | Add a new review |
+|:------:|----------|-------------|
+| `GET` | `/api/cannabis/strains` | Search strains by name, effects, type |
+| `GET` | `/api/cannabis/strains/{id}` | Get strain details |
+| `GET` | `/api/cannabis/dispensaries` | Get nearby dispensaries with photos |
+| `GET` | `/api/cannabis/dispensaries/{id}` | Get dispensary details |
+| `GET` | `/api/cannabis/stats` | Database statistics |
+| `POST` | `/api/cannabis/journal` | Add strain journal entry |
+| `GET` | `/api/cannabis/journal` | Get user's journal entries |
 
-### User
+### 👤 User & Auth
+
 | Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/auth/me` | Get current user |
-| POST | `/api/user/save-place` | Save a place to favorites |
-| DELETE | `/api/user/save-place/{id}` | Remove from favorites |
+|:------:|----------|-------------|
+| `GET` | `/api/auth/me` | Get current authenticated user |
+| `POST` | `/api/auth/login` | Login with email/password |
+| `POST` | `/api/auth/register` | Register new account |
+| `POST` | `/api/favorites/toggle` | Add/remove from favorites |
+| `GET` | `/api/favorites` | Get all user favorites |
+
+---
+
+## 🌍 Cannabis Database
+
+<table>
+<tr>
+<td>
+
+### 🇺🇸 Americas
+| Country | Shops |
+|---------|------:|
+| USA | 4,790 |
+| Canada | 25 |
+| Brazil | 315 |
+| Uruguay | 250 |
+
+</td>
+<td>
+
+### 🇪🇺 Europe
+| Country | Shops |
+|---------|------:|
+| Spain | 237 |
+| Germany | 176 |
+| Netherlands | 147 |
+| Portugal | 93 |
+| Italy | 77 |
+| UK | 74 |
+| France | 70 |
+
+</td>
+<td>
+
+### 🌏 Other
+| Country | Shops |
+|---------|------:|
+| Thailand | 85 |
+| Czech Rep. | 51 |
+| Greece | 49 |
+| Poland | 49 |
+| Austria | 45 |
+| + more | ... |
+
+</td>
+</tr>
+</table>
+
+<p align="center">
+  <b>Total: 6,595 dispensaries • 9,523 strains • 20+ countries</b>
+</p>
+
+---
 
 ## 📂 Project Structure
 
 ```
 /app
-├── backend/
-│   ├── server.py              # Main FastAPI application
-│   ├── google_places.py       # Google APIs integration
-│   ├── import_cannabis_data.py
-│   ├── add_european_shops.py
-│   ├── search_usa_shops.py
-│   ├── search_google_shops.py
-│   └── requirements.txt
-├── frontend/
-│   ├── public/
+├── 📁 backend/
+│   ├── server.py              # FastAPI application (~2000 lines)
+│   ├── google_places.py       # Google APIs integration with caching
+│   ├── requirements.txt
+│   └── .env
+│
+├── 📁 frontend/
+│   ├── 📁 public/
 │   │   ├── manifest.json      # PWA manifest
-│   │   ├── sw.js              # Service worker
-│   │   └── icon-*.png         # App icons
-│   └── src/
-│       ├── components/
-│       │   ├── BottomNav.jsx
-│       │   ├── FeedCard.jsx
-│       │   ├── MapView.jsx
-│       │   ├── Reviews.jsx
-│       │   └── ui/            # Shadcn components
-│       ├── pages/
-│       │   ├── Home.jsx       # Explore page
-│       │   ├── Shuffle.jsx    # Tinder-like swipe
-│       │   ├── Cannabis.jsx   # Weeds section
-│       │   ├── PlaceDetail.jsx
-│       │   ├── StrainDetail.jsx
-│       │   ├── DispensaryDetail.jsx
+│   │   └── sw.js              # Service worker
+│   │
+│   └── 📁 src/
+│       ├── 📁 components/
+│       │   ├── BottomNav.jsx      # Navigation bar
+│       │   ├── FeedCard.jsx       # Place cards
+│       │   ├── LocationEditor.jsx # City search
+│       │   ├── MapView.jsx        # Leaflet map
+│       │   └── 📁 ui/             # Shadcn components
+│       │
+│       ├── 📁 pages/
+│       │   ├── Home.jsx           # Explore feed
+│       │   ├── Cannabis.jsx       # Weeds section
+│       │   ├── Shuffle.jsx        # Tinder-like swipe
+│       │   ├── Favorites.jsx      # Saved items
 │       │   └── ...
-│       ├── App.js
-│       └── index.css
-└── memory/
-    └── PRD.md                 # Product requirements
+│       │
+│       ├── App.js                 # Routes & context
+│       └── index.css              # Tailwind + PWA styles
+│
+└── 📁 memory/
+    └── PRD.md                     # Product requirements
 ```
 
-## 🗄️ Database Schema
+---
 
-### Users
-```javascript
-{
-  email: String,
-  name: String,
-  picture: String,
-  taste_profile: Object,
-  onboarding_completed: Boolean,
-  saved_places: [String]
-}
-```
+## 🎨 Design System
 
-### Strains
-```javascript
-{
-  strain_id: String,
-  name: String,
-  type: String,  // Indica, Sativa, Hybrid
-  description: String,
-  effects: [String],
-  ailments: [String],
-  flavors: [String],
-  thc: Number,
-  cbd: Number
-}
-```
+| Element | Light Mode | Dark Mode |
+|---------|------------|-----------|
+| Background | `#fafafa` | `#0a0a0a` |
+| Primary | `#171717` | `#f5f5f5` |
+| Accent | `hsl(24, 95%, 53%)` | `hsl(24, 95%, 53%)` |
+| Cards | `#ffffff` | `#171717` |
 
-### Dispensaries
-```javascript
-{
-  shop_id: String,
-  name: String,
-  type: String,  // Dispensary, CBD Shop, Coffeeshop
-  address: String,
-  city: String,
-  state: String,
-  country: String,
-  coordinates: { lat: Number, lng: Number },
-  rating: Number,
-  is_dispensary: Boolean
-}
-```
+### Typography
+- **Font**: Plus Jakarta Sans
+- **Headings**: 600 weight
+- **Body**: 400 weight
 
-### Reviews
-```javascript
-{
-  user_id: String,
-  entity_id: String,
-  entity_type: String,  // place, dispensary
-  rating: Number,
-  comment: String,
-  created_at: Date
-}
-```
+---
 
-## 🌍 Cannabis Coverage
+## 📱 PWA Features
 
-| Region | Countries | Shops |
-|--------|-----------|-------|
-| 🇺🇸 USA | 24 states | 4,790 |
-| 🇪🇸 Spain | Cannabis clubs | 237 |
-| 🇩🇪 Germany | CBD/Cannabis clubs | 176 |
-| 🇳🇱 Netherlands | Coffeeshops | 147 |
-| 🇵🇹 Portugal | CBD shops | 93 |
-| 🇮🇹 Italy | CBD shops | 77 |
-| 🇬🇧 UK | CBD shops | 74 |
-| 🇫🇷 France | CBD shops | 70 |
-| + 12 more | Various | 366 |
+- ✅ **Installable** - Add to home screen
+- ✅ **Responsive** - Mobile-first design
+- ✅ **Safe Areas** - iPhone notch & Dynamic Island support
+- ✅ **Touch Optimized** - 44px+ touch targets
+- ✅ **Service Worker** - Offline caching
+- ✅ **Theme Colors** - Native status bar integration
 
-**Total: 6,030 cannabis/CBD spots worldwide**
-
-## 📄 License
-
-MIT License - feel free to use this project for your own purposes.
+---
 
 ## 🙏 Acknowledgments
 
@@ -283,4 +348,8 @@ MIT License - feel free to use this project for your own purposes.
 
 ---
 
-Made with ❤️ for travelers and explorers 🌍
+<p align="center">
+  <b>Made with ❤️ for travelers and explorers</b>
+  <br>
+  <sub>SpotHunt © 2024-2026</sub>
+</p>
