@@ -23,7 +23,8 @@ import {
   Mountain,
   Info,
   Flame,
-  Zap
+  Zap,
+  User
 } from "lucide-react";
 
 // Cannabis leaf icon
@@ -327,14 +328,36 @@ const ShufflePage = () => {
                 <p className="text-xs text-muted-foreground">Swipe to discover</p>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={resetCards}
-              className="rounded-full"
-            >
-              <RotateCcw className="w-5 h-5" />
-            </Button>
+            <div className="flex items-center gap-2">
+              {/* Favorites Button */}
+              <button
+                onClick={() => navigate("/favorites")}
+                className="w-9 h-9 rounded-full bg-muted/40 flex items-center justify-center hover:bg-muted transition-colors"
+                data-testid="header-favorites-btn"
+                title="My Favorites"
+              >
+                <Heart className="w-4 h-4 text-muted-foreground" />
+              </button>
+              
+              {/* Profile Button */}
+              <button
+                onClick={() => navigate("/profile")}
+                className="w-9 h-9 rounded-full bg-muted/40 flex items-center justify-center hover:bg-muted transition-colors"
+                data-testid="header-profile-btn"
+                title="Profile"
+              >
+                <User className="w-4 h-4 text-muted-foreground" />
+              </button>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={resetCards}
+                className="rounded-full"
+              >
+                <RotateCcw className="w-5 h-5" />
+              </Button>
+            </div>
           </div>
 
           {/* Vibe Filters */}

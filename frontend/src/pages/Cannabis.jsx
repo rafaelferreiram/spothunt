@@ -23,7 +23,8 @@ import {
   BookOpen,
   Plus,
   Calendar,
-  Trash2
+  Trash2,
+  User
 } from "lucide-react";
 
 // Cannabis leaf SVG icon - Classic silhouette
@@ -275,8 +276,34 @@ const Cannabis = () => {
                 </p>
               )}
             </div>
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-              <CannabisLeafIcon className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+            <div className="flex items-center gap-2">
+              {/* Favorites Button */}
+              <button
+                onClick={() => setActiveTab("favorites")}
+                className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
+                  activeTab === "favorites" 
+                    ? "bg-red-500/10 text-red-500" 
+                    : "bg-muted/40 text-muted-foreground hover:bg-muted"
+                }`}
+                data-testid="header-favorites-btn"
+                title="My Favorites"
+              >
+                <Heart className={`w-4 h-4 ${activeTab === "favorites" ? "fill-current" : ""}`} />
+              </button>
+              
+              {/* Profile Button */}
+              <button
+                onClick={() => navigate("/profile")}
+                className="w-9 h-9 rounded-full bg-muted/40 flex items-center justify-center hover:bg-muted transition-colors"
+                data-testid="header-profile-btn"
+                title="Profile"
+              >
+                <User className="w-4 h-4 text-muted-foreground" />
+              </button>
+
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                <CannabisLeafIcon className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+              </div>
             </div>
           </div>
 

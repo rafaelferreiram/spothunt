@@ -17,6 +17,7 @@ import DispensaryDetail from "@/pages/DispensaryDetail";
 import Shuffle from "@/pages/Shuffle";
 import Visiting from "@/pages/Visiting";
 import DayPlan from "@/pages/DayPlan";
+import Favorites from "@/pages/Favorites";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 export const API = `${BACKEND_URL}/api`;
@@ -245,6 +246,14 @@ const AppRouter = () => {
         element={
           <ProtectedRoute>
             <DayPlan />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/favorites"
+        element={
+          <ProtectedRoute>
+            <Favorites />
           </ProtectedRoute>
         }
       />

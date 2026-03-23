@@ -38,7 +38,9 @@ import {
   DollarSign,
   Clock,
   ArrowUpDown,
-  RotateCcw
+  RotateCcw,
+  Heart,
+  User
 } from "lucide-react";
 
 const CATEGORIES = [
@@ -258,6 +260,26 @@ const Home = () => {
             </div>
 
             <div className="flex items-center gap-2">
+              {/* Favorites Button */}
+              <button
+                onClick={() => navigate("/favorites")}
+                className="w-9 h-9 rounded-full bg-muted/40 flex items-center justify-center hover:bg-muted transition-colors"
+                data-testid="header-favorites-btn"
+                title="My Favorites"
+              >
+                <Heart className="w-4 h-4 text-muted-foreground" />
+              </button>
+              
+              {/* Profile Button */}
+              <button
+                onClick={() => navigate("/profile")}
+                className="w-9 h-9 rounded-full bg-muted/40 flex items-center justify-center hover:bg-muted transition-colors"
+                data-testid="header-profile-btn"
+                title="Profile"
+              >
+                <User className="w-4 h-4 text-muted-foreground" />
+              </button>
+
               <div className="flex bg-muted/40 rounded-full p-0.5">
                 <button
                   onClick={() => setViewMode("feed")}
