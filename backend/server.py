@@ -13,6 +13,16 @@ import uuid
 from datetime import datetime, timezone, timedelta
 import math
 
+# Import Google Places service
+from google_places import (
+    search_nearby_places, 
+    get_place_details, 
+    reverse_geocode,
+    calculate_distance,
+    calculate_walk_time,
+    calculate_drive_time
+)
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
@@ -740,9 +750,10 @@ async def get_places(
     open_now: bool = False,
     max_distance: Optional[int] = None,
     search: Optional[str] = None,
+    use_google: bool = True,
     request: Request = None
 ):
-    """Get places with optional filters"""
+    """Get places with optional filters - uses Google Places API or mock data"""
     # Try to get user for personalized scoring
     taste_profile = None
     try:
@@ -751,21 +762,47 @@ async def get_places(
     except Exception:
         pass
     
+    # Try Google Places API first
+    if use_google and os.environ.get('GOOGLE_MAPS_API_KEY'):
+        try:
+            google_result = await search_nearby_places(
+                lat=lat,
+                lng=lng,
+                category=category or "all",
+                radius=max_distance or 2000,
+                keyword=search,
+                open_now=open_now
+            )
+            
+            places = google_result.get("places", [])
+            
+            if places:
+                # Add personalized match scores
+                for place in places:
+                    if taste_profile:
+                        place["match_score"] = calculate_match_score(place, taste_profile)
+                
+                # Sort by match score then distance
+                places.sort(key=lambda x: (-x.get("match_score", 0), x.get("distance_m", 9999)))
+                
+                return {"places": places, "total": len(places), "source": "google"}
+        except Exception as e:
+            logger.error(f"Google Places error: {e}")
+    
+    # Fallback to mock data
     results = []
     
     for place in MOCK_PLACES:
-        # Calculate distance
         distance_m = calculate_distance(
             lat, lng,
             place["coordinates"]["lat"],
             place["coordinates"]["lng"]
         )
         
-        # Apply filters
         if max_distance and distance_m > max_distance:
             continue
         
-        if category and place["category"] != category:
+        if category and category != "all" and place["category"] != category:
             continue
         
         if open_now and not place["is_open"]:
@@ -777,28 +814,34 @@ async def get_places(
             if search_lower not in searchable:
                 continue
         
-        # Enrich place data
         place_copy = place.copy()
         place_copy["distance_m"] = round(distance_m)
         place_copy["walk_mins"] = calculate_walk_time(distance_m)
         place_copy["drive_mins"] = calculate_drive_time(distance_m)
         place_copy["match_score"] = calculate_match_score(place, taste_profile)
-        
-        # Add deep links
         place_copy["maps_deep_link"] = f"https://www.google.com/maps/search/?api=1&query={place['coordinates']['lat']},{place['coordinates']['lng']}"
         place_copy["uber_deep_link"] = f"uber://?action=setPickup&pickup=my_location&dropoff[latitude]={place['coordinates']['lat']}&dropoff[longitude]={place['coordinates']['lng']}&dropoff[nickname]={place['name'].replace(' ', '%20')}"
         
         results.append(place_copy)
     
-    # Sort by match score then distance
     results.sort(key=lambda x: (-x["match_score"], x["distance_m"]))
     
-    return {"places": results, "total": len(results)}
+    return {"places": results, "total": len(results), "source": "mock"}
 
-@places_router.get("/{place_id}")
-async def get_place(place_id: str, lat: float = 40.7128, lng: float = -74.0060, request: Request = None):
-    """Get a single place by ID"""
-    # Try to get user for personalized scoring
+@places_router.get("/nearby")
+async def get_nearby_places_google(
+    lat: float,
+    lng: float,
+    category: Optional[str] = "all",
+    radius: int = 2000,
+    keyword: Optional[str] = None,
+    open_now: bool = False,
+    request: Request = None
+):
+    """Get nearby places using Google Places API only"""
+    if not os.environ.get('GOOGLE_MAPS_API_KEY'):
+        raise HTTPException(status_code=503, detail="Google API not configured")
+    
     taste_profile = None
     try:
         user = await get_current_user(request)
@@ -806,6 +849,53 @@ async def get_place(place_id: str, lat: float = 40.7128, lng: float = -74.0060, 
     except Exception:
         pass
     
+    result = await search_nearby_places(
+        lat=lat,
+        lng=lng,
+        category=category,
+        radius=radius,
+        keyword=keyword,
+        open_now=open_now
+    )
+    
+    places = result.get("places", [])
+    
+    # Add personalized match scores
+    for place in places:
+        if taste_profile:
+            place["match_score"] = calculate_match_score(place, taste_profile)
+    
+    places.sort(key=lambda x: (-x.get("match_score", 0), x.get("distance_m", 9999)))
+    
+    return {"places": places, "total": len(places)}
+
+@places_router.get("/location")
+async def get_location_name(lat: float, lng: float):
+    """Get location name from coordinates"""
+    location = await reverse_geocode(lat, lng)
+    return location
+
+@places_router.get("/{place_id}")
+async def get_place(place_id: str, lat: float = 40.7128, lng: float = -74.0060, request: Request = None):
+    """Get a single place by ID"""
+    taste_profile = None
+    try:
+        user = await get_current_user(request)
+        taste_profile = user.taste_profile.model_dump() if user.taste_profile else None
+    except Exception:
+        pass
+    
+    # Check if it's a Google place
+    if place_id.startswith("google_"):
+        google_place_id = place_id.replace("google_", "")
+        place = await get_place_details(google_place_id, lat, lng)
+        if place:
+            if taste_profile:
+                place["match_score"] = calculate_match_score(place, taste_profile)
+            return place
+        raise HTTPException(status_code=404, detail="Place not found")
+    
+    # Check mock data
     for place in MOCK_PLACES:
         if place["id"] == place_id:
             place_copy = place.copy()

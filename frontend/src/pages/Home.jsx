@@ -44,22 +44,58 @@ const Home = () => {
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [openNow, setOpenNow] = useState(false);
-  const [userLocation, setUserLocation] = useState({ lat: 40.7128, lng: -74.0060 });
-  const [locationName] = useState("New York City");
+  const [userLocation, setUserLocation] = useState(null);
+  const [locationName, setLocationName] = useState("Finding you...");
+  const [locationLoading, setLocationLoading] = useState(true);
 
+  // Get user's actual location
   useEffect(() => {
+    setLocationLoading(true);
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => {}
+        async (pos) => {
+          const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          setUserLocation(loc);
+          
+          // Get location name from coordinates
+          try {
+            const res = await fetch(`${API}/places/location?lat=${loc.lat}&lng=${loc.lng}`);
+            const data = await res.json();
+            const name = data.neighborhood 
+              ? `${data.neighborhood}, ${data.city}` 
+              : data.city || "Your Location";
+            setLocationName(name);
+          } catch (e) {
+            setLocationName("Your Location");
+          }
+          setLocationLoading(false);
+        },
+        (error) => {
+          console.log("Geolocation error:", error);
+          // Default to NYC
+          setUserLocation({ lat: 40.7128, lng: -74.0060 });
+          setLocationName("New York City");
+          setLocationLoading(false);
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
       );
+    } else {
+      setUserLocation({ lat: 40.7128, lng: -74.0060 });
+      setLocationName("New York City");
+      setLocationLoading(false);
     }
   }, []);
 
   const fetchPlaces = useCallback(async () => {
+    if (!userLocation) return;
+    
     setLoading(true);
     try {
-      const params = new URLSearchParams({ lat: userLocation.lat.toString(), lng: userLocation.lng.toString() });
+      const params = new URLSearchParams({ 
+        lat: userLocation.lat.toString(), 
+        lng: userLocation.lng.toString(),
+        use_google: "true"
+      });
       if (activeCategory !== "all") params.append("category", activeCategory);
       if (searchQuery) params.append("search", searchQuery);
       if (openNow) params.append("open_now", "true");
@@ -75,7 +111,9 @@ const Home = () => {
     }
   }, [userLocation, activeCategory, searchQuery, openNow]);
 
-  useEffect(() => { fetchPlaces(); }, [fetchPlaces]);
+  useEffect(() => { 
+    if (userLocation) fetchPlaces(); 
+  }, [fetchPlaces, userLocation]);
 
   useEffect(() => {
     const t = setTimeout(() => fetchPlaces(), 300);
@@ -94,8 +132,10 @@ const Home = () => {
                 <MapPin className="w-4 h-4 text-primary" />
               </div>
               <div>
-                <p className="font-medium text-sm">{locationName}</p>
-                <p className="text-xs text-muted-foreground">Exploring</p>
+                <p className="font-medium text-sm">{locationLoading ? "Finding you..." : locationName}</p>
+                <p className="text-xs text-muted-foreground">
+                  {locationLoading ? "Getting location" : "Nearby places"}
+                </p>
               </div>
             </div>
 
