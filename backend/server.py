@@ -1071,14 +1071,14 @@ async def get_dispensaries(
             {"city": {"$regex": search, "$options": "i"}}
         ]
     
-    skip = (page - 1) * limit
-    
-    cursor = db.dispensaries.find(query, {"_id": 0}).skip(skip).limit(limit)
-    dispensaries = await cursor.to_list(length=limit)
-    
-    # Calculate distances if user location provided
+    # If location provided, fetch ALL shops and filter by distance
     if lat and lng:
-        for disp in dispensaries:
+        # Fetch all shops to calculate distances (shops DB isn't huge)
+        cursor = db.dispensaries.find(query, {"_id": 0})
+        all_dispensaries = await cursor.to_list(length=5000)
+        
+        # Calculate distances
+        for disp in all_dispensaries:
             coords = disp.get("coordinates", {})
             if coords.get("lat") and coords.get("lng"):
                 disp["distance_m"] = calculate_distance(
@@ -1087,15 +1087,26 @@ async def get_dispensaries(
                 disp["walk_mins"] = calculate_walk_time(disp["distance_m"])
                 disp["drive_mins"] = calculate_drive_time(disp["distance_m"])
                 disp["maps_deep_link"] = f"https://www.google.com/maps/search/?api=1&query={coords['lat']},{coords['lng']}"
+            else:
+                disp["distance_m"] = float("inf")
         
         # Sort by distance
-        dispensaries.sort(key=lambda x: x.get("distance_m", float("inf")))
+        all_dispensaries.sort(key=lambda x: x.get("distance_m", float("inf")))
         
         # Filter by max distance
         if max_distance:
-            dispensaries = [d for d in dispensaries if d.get("distance_m", 0) <= max_distance]
-    
-    total = await db.dispensaries.count_documents(query)
+            all_dispensaries = [d for d in all_dispensaries if d.get("distance_m", float("inf")) <= max_distance]
+        
+        # Paginate
+        total = len(all_dispensaries)
+        skip = (page - 1) * limit
+        dispensaries = all_dispensaries[skip:skip + limit]
+    else:
+        # No location - just paginate normally
+        skip = (page - 1) * limit
+        cursor = db.dispensaries.find(query, {"_id": 0}).skip(skip).limit(limit)
+        dispensaries = await cursor.to_list(length=limit)
+        total = await db.dispensaries.count_documents(query)
     
     return {
         "dispensaries": dispensaries,
