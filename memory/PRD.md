@@ -82,6 +82,22 @@ Build SpotHunt - a hyperlocal discovery app for travelers. A mobile-first discov
 
 ## What's Been Implemented
 
+### Mar 23, 2026 (Session 10) - Location Editor & Real Photos
+- **Location Editor**: Users can now edit their location to explore other cities
+  - Click on city name in header opens search field
+  - Search for any city worldwide using Google Geocoding
+  - "Use current location" option with GPS
+  - "Visiting" badge appears when exploring other cities
+- **Real Google Photos**: All places and dispensaries now show real photos from Google Maps
+  - Backend fetches photos using Google Places API photo_reference
+  - Caching implemented to reduce API calls
+  - Fallback to themed images if no photos available
+- **Components Added**:
+  - `/app/frontend/src/components/LocationEditor.jsx` - Location editing UI
+- **API Endpoints Added**:
+  - `GET /api/places/search-city?query=` - Search cities by name
+  - `GET /api/places/reverse-geocode?lat=&lng=` - Get city name from coordinates
+
 ### Jan 22, 2026 (Session 1)
 - **MVP Complete**: Full CityBlend app with all core features
 - **Backend**: FastAPI with 15 mock NYC places, auth, user profiles, saved places
@@ -179,28 +195,29 @@ Build SpotHunt - a hyperlocal discovery app for travelers. A mobile-first discov
 - None - Core features complete including all major requested features
 
 ### P1 - High Priority
-- [ ] Add real dispensary photos from Google Places API
+- [x] Add real dispensary photos from Google Places API ✅ (Mar 23, 2026)
+- [x] Location search / "I'm visiting X city" feature ✅ (Mar 23, 2026)
 - [ ] Cannabis dispensary reviews
 - [ ] Backend refactoring (split server.py into routers)
 
 ### P2 - Medium Priority
-- [ ] Location search / "I'm visiting X city" feature
 - [ ] Trip planning mode with date range
 - [ ] Photo carousel on place cards
 - [ ] Share place/itinerary
 - [ ] Strain comparison feature
+- [ ] Increase session duration (currently short)
 
 ### P3 - Nice to Have
 - [ ] AI chat "find me a cozy spot for a date"
 - [ ] Collaborative trip planning
 - [ ] Push notifications for smart alerts
 - [ ] AR camera mode
-- [ ] Strain Journal for cannabis users
+- [x] Strain Journal for cannabis users ✅
 
 ## Next Tasks
 1. Add cannabis dispensary reviews functionality
-2. Implement establishment age filter
-3. Backend refactoring - split server.py into modular routers
+2. Backend refactoring - split server.py into modular routers (~2000 lines)
+3. Increase JWT session duration to 7+ days
 4. Social sharing features
 5. AI-powered recommendations chat
 
