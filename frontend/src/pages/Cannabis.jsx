@@ -102,19 +102,33 @@ const Cannabis = () => {
   }, [searchQuery, selectedType, selectedEffect]);
 
   const fetchDispensaries = useCallback(async () => {
+    if (!userLocation) {
+      logger.info && console.log("fetchDispensaries: No userLocation available");
+      return;
+    }
+    
     setLoading(true);
+    console.log("Fetching dispensaries for location:", userLocation);
+    
     try {
       const params = new URLSearchParams();
       if (searchQuery) params.append("search", searchQuery);
-      if (userLocation) {
-        params.append("lat", userLocation.lat);
-        params.append("lng", userLocation.lng);
-      }
+      // Always send location
+      params.append("lat", userLocation.lat.toString());
+      params.append("lng", userLocation.lng.toString());
       params.append("limit", "30");
-      const res = await fetch(`${API}/cannabis/dispensaries?${params}`);
+      params.append("max_distance", "100000"); // 100km radius
+      
+      const url = `${API}/cannabis/dispensaries?${params}`;
+      console.log("Dispensaries API URL:", url);
+      
+      const res = await fetch(url);
       const data = await res.json();
+      console.log("Dispensaries response:", data.total, "total found");
       setDispensaries(data.dispensaries || []);
-    } catch (e) { console.error(e); }
+    } catch (e) { 
+      console.error("Error fetching dispensaries:", e); 
+    }
     finally { setLoading(false); }
   }, [searchQuery, userLocation]);
 
@@ -246,6 +260,13 @@ const Cannabis = () => {
     else if (activeTab === "journal") fetchJournal();
     else if (activeTab === "favorites") fetchFavorites();
   }, [activeTab, fetchStrains, fetchDispensaries, fetchJournal, fetchFavorites]);
+
+  // Re-fetch dispensaries when location changes
+  useEffect(() => {
+    if (activeTab === "dispensaries" && userLocation) {
+      fetchDispensaries();
+    }
+  }, [userLocation, activeTab, fetchDispensaries]);
 
   // Load favorites on mount for heart icons
   useEffect(() => {

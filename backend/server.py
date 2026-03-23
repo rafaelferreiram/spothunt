@@ -12,6 +12,8 @@ from typing import List, Optional, Dict
 import uuid
 from datetime import datetime, timezone, timedelta
 import math
+import hashlib
+import json
 
 # Import Google Places service
 from google_places import (
@@ -42,6 +44,46 @@ places_router = APIRouter(prefix="/api/places")
 user_router = APIRouter(prefix="/api/user")
 cannabis_router = APIRouter(prefix="/api/cannabis")
 reviews_router = APIRouter(prefix="/api/reviews")
+
+# ==============================================
+# API Response Cache (24h TTL)
+# ==============================================
+_api_cache: Dict[str, Dict] = {}
+CACHE_TTL_HOURS = 24
+
+def get_cache_key(prefix: str, **kwargs) -> str:
+    """Generate a cache key from parameters"""
+    # Round coordinates to 2 decimal places to improve cache hits
+    if 'lat' in kwargs and kwargs['lat'] is not None:
+        kwargs['lat'] = round(float(kwargs['lat']), 2)
+    if 'lng' in kwargs and kwargs['lng'] is not None:
+        kwargs['lng'] = round(float(kwargs['lng']), 2)
+    
+    # Sort kwargs for consistent key generation
+    sorted_params = sorted(kwargs.items())
+    params_str = json.dumps(sorted_params, sort_keys=True)
+    hash_val = hashlib.md5(params_str.encode()).hexdigest()[:12]
+    return f"{prefix}_{hash_val}"
+
+def get_cached_response(cache_key: str) -> Optional[Dict]:
+    """Get cached API response if valid"""
+    if cache_key in _api_cache:
+        cache_entry = _api_cache[cache_key]
+        if cache_entry["expires"] > datetime.now():
+            logger.info(f"Cache HIT for key: {cache_key}")
+            return cache_entry["data"]
+        else:
+            del _api_cache[cache_key]
+            logger.info(f"Cache EXPIRED for key: {cache_key}")
+    return None
+
+def set_cached_response(cache_key: str, data: Dict, ttl_hours: int = CACHE_TTL_HOURS):
+    """Cache API response"""
+    _api_cache[cache_key] = {
+        "data": data,
+        "expires": datetime.now() + timedelta(hours=ttl_hours)
+    }
+    logger.info(f"Cache SET for key: {cache_key}, expires in {ttl_hours}h")
 
 # Configure logging
 logging.basicConfig(
@@ -1419,7 +1461,20 @@ async def get_dispensaries(
     limit: int = 20,
     fetch_photos: bool = True  # Whether to fetch real Google Photos
 ):
-    """Get dispensaries with location and filters"""
+    """Get dispensaries with location and filters - with caching"""
+    
+    # Generate cache key from all parameters
+    cache_key = get_cache_key(
+        "dispensaries",
+        lat=lat, lng=lng, city=city, state=state, country=country,
+        search=search, max_distance=max_distance, page=page, limit=limit
+    )
+    
+    # Check cache first (don't cache photo fetching, only the base query)
+    cached = get_cached_response(cache_key)
+    if cached and not fetch_photos:
+        return cached
+    
     query = {"is_dispensary": True}
     
     if city:
@@ -1441,9 +1496,13 @@ async def get_dispensaries(
     
     # If location provided, fetch ALL shops and filter by distance
     if lat and lng:
+        logger.info(f"Searching dispensaries near {lat}, {lng} within {max_distance}m")
+        
         # Fetch all shops to calculate distances (shops DB isn't huge)
         cursor = db.shops.find(query, {"_id": 0})
-        all_dispensaries = await cursor.to_list(length=5000)
+        all_dispensaries = await cursor.to_list(length=10000)
+        
+        logger.info(f"Found {len(all_dispensaries)} total shops in DB matching query")
         
         # Calculate distances and add photo URLs
         for disp in all_dispensaries:
@@ -1465,6 +1524,8 @@ async def get_dispensaries(
         if max_distance:
             all_dispensaries = [d for d in all_dispensaries if d.get("distance_m", float("inf")) <= max_distance]
         
+        logger.info(f"After distance filter ({max_distance}m): {len(all_dispensaries)} shops")
+        
         # Paginate
         total = len(all_dispensaries)
         skip = (page - 1) * limit
@@ -1477,7 +1538,7 @@ async def get_dispensaries(
         total = await db.shops.count_documents(query)
     
     # Fetch real Google photos for dispensaries that have google_place_id
-    if fetch_photos and api_key:
+    if fetch_photos and api_key and dispensaries:
         for disp in dispensaries:
             google_place_id = disp.get("google_place_id")
             coords = disp.get("coordinates", {})
@@ -1509,12 +1570,18 @@ async def get_dispensaries(
                                 {"$set": {"google_place_id": search_result["place_id"]}}
                             )
     
-    return {
+    response = {
         "dispensaries": dispensaries,
         "total": total,
         "page": page,
         "pages": (total + limit - 1) // limit
     }
+    
+    # Cache the response (without photos which are fetched separately)
+    if not fetch_photos:
+        set_cached_response(cache_key, response)
+    
+    return response
 
 async def fetch_place_photos(google_place_id: str, max_photos: int = 3) -> List[str]:
     """Fetch photos for a place using Google Place Details API"""

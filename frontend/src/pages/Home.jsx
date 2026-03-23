@@ -167,21 +167,27 @@ const Home = () => {
     if (activeCategory === "smoke") {
       setLoading(true);
       try {
+        // Use larger radius for cannabis (100km) since dispensaries are less dense
+        const smokeRadius = Math.max(filters.radius, 100000);
         const params = new URLSearchParams({ 
           lat: userLocation.lat.toString(), 
           lng: userLocation.lng.toString(),
-          max_distance: filters.radius.toString(),
-          limit: "20",
+          max_distance: smokeRadius.toString(),
+          limit: "30",
         });
         
         if (activeSubcategory !== "all") {
           params.append("search", activeSubcategory);
         }
         if (searchQuery) params.append("search", searchQuery);
+        
+        console.log("Fetching smoke/dispensaries with params:", params.toString());
 
         const res = await fetch(`${API}/cannabis/dispensaries?${params}`, { credentials: "include" });
         if (!res.ok) throw new Error("Failed");
         const data = await res.json();
+        
+        console.log("Smoke response:", data.total, "dispensaries found");
         
         // Transform dispensary data to place format
         const transformedPlaces = (data.dispensaries || []).map(d => ({
