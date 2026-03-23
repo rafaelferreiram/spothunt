@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { API, useAuth } from "@/App";
+import { API, useAuth, useAppLocation } from "@/App";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import BottomNav from "@/components/BottomNav";
+import LocationEditor from "@/components/LocationEditor";
 import { toast } from "sonner";
 import {
   Search,
@@ -46,6 +47,13 @@ const EFFECTS = ["Relaxed", "Happy", "Euphoric", "Uplifted", "Creative", "Sleepy
 const Cannabis = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { 
+    userLocation: globalLocation, 
+    locationName: globalLocationName, 
+    isCustomLocation, 
+    locationLoading,
+    handleLocationChange 
+  } = useAppLocation();
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "strains");
   const [viewMode, setViewMode] = useState("feed"); // "feed" or "list"
@@ -59,7 +67,6 @@ const Cannabis = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState("all");
   const [selectedEffect, setSelectedEffect] = useState("");
-  const [userLocation, setUserLocation] = useState(null);
   const [stats, setStats] = useState(null);
   const [showAddEntry, setShowAddEntry] = useState(false);
   const [newEntry, setNewEntry] = useState({
@@ -72,14 +79,8 @@ const Cannabis = () => {
     location: ""
   });
 
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => setUserLocation({ lat: 40.7128, lng: -74.006 })
-      );
-    }
-  }, []);
+  // Use global location
+  const userLocation = globalLocation;
 
   useEffect(() => {
     fetch(`${API}/cannabis/stats`).then(res => res.json()).then(setStats).catch(() => {});
@@ -306,6 +307,34 @@ const Cannabis = () => {
               </div>
             </div>
           </div>
+
+          {/* Location Row - Only show on Spots tab */}
+          {activeTab === "dispensaries" && (
+            <div className="flex items-center gap-2">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                isCustomLocation 
+                  ? "bg-gradient-to-br from-amber-500/20 to-amber-500/5" 
+                  : "bg-gradient-to-br from-emerald-500/20 to-emerald-500/5"
+              }`}>
+                {isCustomLocation ? (
+                  <Navigation className="w-3.5 h-3.5 text-amber-500" />
+                ) : (
+                  <MapPin className="w-3.5 h-3.5 text-emerald-500" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <LocationEditor
+                  currentLocation={userLocation}
+                  locationName={locationLoading ? "Finding you..." : globalLocationName}
+                  onLocationChange={handleLocationChange}
+                  className="w-full"
+                />
+                {isCustomLocation && (
+                  <p className="text-[10px] text-amber-500 font-medium mt-0.5">Visiting</p>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Search */}
           <div className="relative">

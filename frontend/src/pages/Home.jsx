@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/App";
+import { useAuth, useAppLocation } from "@/App";
 import { API } from "@/App";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -42,13 +42,15 @@ import {
   RotateCcw,
   Heart,
   User,
-  Navigation
+  Navigation,
+  Leaf
 } from "lucide-react";
 
 const CATEGORIES = [
   { id: "all", name: "For You", icon: Sparkles },
   { id: "restaurant", name: "Eat", icon: UtensilsCrossed },
   { id: "bar", name: "Drink", icon: Beer },
+  { id: "smoke", name: "Smoke", icon: Leaf },
   { id: "museum", name: "Culture", icon: Landmark },
   { id: "attraction", name: "Views", icon: Mountain },
   { id: "outdoors", name: "Nature", icon: Trees },
@@ -84,6 +86,17 @@ const BAR_TYPES = [
   { id: "lounge", name: "Lounge" },
 ];
 
+// Subcategories for smoke/cannabis types
+const SMOKE_TYPES = [
+  { id: "all", name: "All" },
+  { id: "dispensary", name: "Dispensary" },
+  { id: "cannabis", name: "Cannabis Shop" },
+  { id: "cbd", name: "CBD Store" },
+  { id: "hemp", name: "Hemp Shop" },
+  { id: "coffeeshop", name: "Coffeeshop" },
+  { id: "headshop", name: "Head Shop" },
+];
+
 const RADIUS_OPTIONS = [
   { value: 1000, label: "1 km" },
   { value: 5000, label: "5 km" },
@@ -111,17 +124,21 @@ const SORT_OPTIONS = [
 const Home = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { 
+    userLocation, 
+    locationName, 
+    isCustomLocation, 
+    locationLoading, 
+    handleLocationChange 
+  } = useAppLocation();
+  
   const [viewMode, setViewMode] = useState("feed");
   const [places, setPlaces] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("all");
   const [activeSubcategory, setActiveSubcategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [userLocation, setUserLocation] = useState(null);
-  const [locationName, setLocationName] = useState("Finding you...");
-  const [locationLoading, setLocationLoading] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [isCustomLocation, setIsCustomLocation] = useState(false); // Track if using custom location
 
   // Filters
   const [filters, setFilters] = useState({
@@ -143,53 +160,61 @@ const Home = () => {
     filters.sortBy !== "relevance",
   ].filter(Boolean).length;
 
-  // Handle location change from LocationEditor
-  const handleLocationChange = (coords, name) => {
-    setUserLocation(coords);
-    setLocationName(name);
-    setIsCustomLocation(name !== "Current Location");
-    setLocationLoading(false);
-  };
-
-  // Get user's actual location on initial load
-  useEffect(() => {
-    setLocationLoading(true);
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-          setUserLocation(loc);
-          
-          try {
-            const res = await fetch(`${API}/places/location?lat=${loc.lat}&lng=${loc.lng}`);
-            const data = await res.json();
-            const name = data.neighborhood 
-              ? `${data.neighborhood}, ${data.city}` 
-              : data.city || "Your Location";
-            setLocationName(name);
-          } catch (e) {
-            setLocationName("Your Location");
-          }
-          setLocationLoading(false);
-        },
-        (error) => {
-          console.log("Geolocation error:", error);
-          setUserLocation({ lat: 40.7128, lng: -74.0060 });
-          setLocationName("New York City");
-          setLocationLoading(false);
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
-      );
-    } else {
-      setUserLocation({ lat: 40.7128, lng: -74.0060 });
-      setLocationName("New York City");
-      setLocationLoading(false);
-    }
-  }, []);
-
   const fetchPlaces = useCallback(async () => {
     if (!userLocation) return;
     
+    // Handle "smoke" category - fetch from cannabis API
+    if (activeCategory === "smoke") {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams({ 
+          lat: userLocation.lat.toString(), 
+          lng: userLocation.lng.toString(),
+          max_distance: filters.radius.toString(),
+          limit: "20",
+        });
+        
+        if (activeSubcategory !== "all") {
+          params.append("search", activeSubcategory);
+        }
+        if (searchQuery) params.append("search", searchQuery);
+
+        const res = await fetch(`${API}/cannabis/dispensaries?${params}`, { credentials: "include" });
+        if (!res.ok) throw new Error("Failed");
+        const data = await res.json();
+        
+        // Transform dispensary data to place format
+        const transformedPlaces = (data.dispensaries || []).map(d => ({
+          id: d.shop_id,
+          name: d.name,
+          category: "smoke",
+          subcategories: [d.type || "Dispensary"],
+          vibe_tags: ["Cannabis", d.country],
+          address: d.address,
+          neighborhood: d.city,
+          city: d.city,
+          coordinates: d.coordinates,
+          rating: d.rating || 4.5,
+          review_count: d.review_count || 0,
+          is_open: true,
+          photos: d.photos || [],
+          distance_m: d.distance_m,
+          walk_mins: d.walk_mins,
+          drive_mins: d.drive_mins,
+          maps_deep_link: d.maps_deep_link,
+          isDispensary: true,
+        }));
+        
+        setPlaces(transformedPlaces);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+    
+    // Regular places fetch
     setLoading(true);
     try {
       const params = new URLSearchParams({ 
@@ -595,6 +620,30 @@ const Home = () => {
             <ScrollBar orientation="horizontal" className="invisible" />
           </ScrollArea>
         )}
+
+        {/* Subcategories for Smoke/Cannabis */}
+        {activeCategory === "smoke" && (
+          <ScrollArea className="w-full border-t border-border/20">
+            <div className="flex gap-1.5 px-4 py-2">
+              {SMOKE_TYPES.map((type) => (
+                <button
+                  key={type.id}
+                  onClick={() => setActiveSubcategory(type.id)}
+                  className={`
+                    px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all
+                    ${activeSubcategory === type.id 
+                      ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-medium" 
+                      : "text-muted-foreground hover:text-foreground"}
+                  `}
+                  data-testid={`smoke-type-${type.id}`}
+                >
+                  {type.name}
+                </button>
+              ))}
+            </div>
+            <ScrollBar orientation="horizontal" className="invisible" />
+          </ScrollArea>
+        )}
       </header>
 
       {/* Content */}
@@ -618,7 +667,14 @@ const Home = () => {
                 <FeedCard
                   key={place.id}
                   place={place}
-                  onClick={() => navigate(`/place/${place.id}`)}
+                  onClick={() => {
+                    // Navigate to dispensary detail if it's a smoke/dispensary place
+                    if (place.isDispensary || activeCategory === "smoke") {
+                      navigate(`/dispensary/${place.id}`);
+                    } else {
+                      navigate(`/place/${place.id}`);
+                    }
+                  }}
                   savedPlaces={user?.saved_places || []}
                   className={`animate-fade-in`}
                   style={{ animationDelay: `${i * 0.05}s` }}
@@ -628,7 +684,15 @@ const Home = () => {
           </div>
         ) : (
           <div className="h-[calc(100vh-220px)] rounded-3xl overflow-hidden shadow-lg">
-            <MapView places={places} userLocation={userLocation} onPlaceClick={(id) => navigate(`/place/${id}`)} />
+            <MapView places={places} userLocation={userLocation} onPlaceClick={(id) => {
+              // Check if it's a dispensary
+              const place = places.find(p => p.id === id);
+              if (place?.isDispensary || activeCategory === "smoke") {
+                navigate(`/dispensary/${id}`);
+              } else {
+                navigate(`/place/${id}`);
+              }
+            }} />
           </div>
         )}
       </main>

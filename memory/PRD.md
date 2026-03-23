@@ -82,18 +82,27 @@ Build SpotHunt - a hyperlocal discovery app for travelers. A mobile-first discov
 
 ## What's Been Implemented
 
-### Mar 23, 2026 (Session 10) - Location Editor & Real Photos
+### Mar 23, 2026 (Session 10) - Location Editor & Real Photos & Smoke Category
 - **Location Editor**: Users can now edit their location to explore other cities
   - Click on city name in header opens search field
   - Search for any city worldwide using Google Geocoding
   - "Use current location" option with GPS
   - "Visiting" badge appears when exploring other cities
+  - **Location is now shared between Home and Weeds pages via global context**
 - **Real Google Photos**: All places and dispensaries now show real photos from Google Maps
   - Backend fetches photos using Google Places API photo_reference
   - Caching implemented to reduce API calls
   - Fallback to themed images if no photos available
-- **Components Added**:
-  - `/app/frontend/src/components/LocationEditor.jsx` - Location editing UI
+- **Smoke Category in Home Page**: Added "Smoke" category alongside Eat, Drink, Culture
+  - Subcategories: All, Dispensary, Cannabis Shop, CBD Store, Hemp Shop, Coffeeshop, Head Shop
+  - Clicking on dispensary cards navigates to dispensary detail page
+- **Weeds Page Location**: Added LocationEditor to Weeds/Spots tab
+  - Location syncs with Home page automatically
+  - Shows "Visiting" badge when exploring other cities
+- **Components Modified**:
+  - `/app/frontend/src/App.js` - Added LocationContext for global location state
+  - `/app/frontend/src/pages/Home.jsx` - Added Smoke category with subcategories
+  - `/app/frontend/src/pages/Cannabis.jsx` - Added LocationEditor to Spots tab
 - **API Endpoints Added**:
   - `GET /api/places/search-city?query=` - Search cities by name
   - `GET /api/places/reverse-geocode?lat=&lng=` - Get city name from coordinates

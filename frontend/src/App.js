@@ -44,6 +44,82 @@ export const useTheme = () => {
   return context;
 };
 
+// Location Context - Shared between pages
+const LocationContext = createContext(null);
+
+export const useAppLocation = () => {
+  const context = useContext(LocationContext);
+  if (!context) {
+    throw new Error("useAppLocation must be used within LocationProvider");
+  }
+  return context;
+};
+
+const LocationProvider = ({ children }) => {
+  const [userLocation, setUserLocation] = useState(null);
+  const [locationName, setLocationName] = useState("Finding you...");
+  const [isCustomLocation, setIsCustomLocation] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(true);
+
+  // Get user's actual location on initial load
+  useEffect(() => {
+    setLocationLoading(true);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          setUserLocation(loc);
+          
+          try {
+            const res = await fetch(`${API}/places/location?lat=${loc.lat}&lng=${loc.lng}`);
+            const data = await res.json();
+            const name = data.neighborhood 
+              ? `${data.neighborhood}, ${data.city}` 
+              : data.city || "Your Location";
+            setLocationName(name);
+          } catch (e) {
+            setLocationName("Your Location");
+          }
+          setLocationLoading(false);
+        },
+        (error) => {
+          console.log("Geolocation error:", error);
+          setUserLocation({ lat: 40.7128, lng: -74.0060 });
+          setLocationName("New York City");
+          setLocationLoading(false);
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    } else {
+      setUserLocation({ lat: 40.7128, lng: -74.0060 });
+      setLocationName("New York City");
+      setLocationLoading(false);
+    }
+  }, []);
+
+  const handleLocationChange = (coords, name) => {
+    setUserLocation(coords);
+    setLocationName(name);
+    setIsCustomLocation(name !== "Current Location");
+    setLocationLoading(false);
+  };
+
+  return (
+    <LocationContext.Provider value={{
+      userLocation,
+      locationName,
+      isCustomLocation,
+      locationLoading,
+      handleLocationChange,
+      setUserLocation,
+      setLocationName,
+      setIsCustomLocation
+    }}>
+      {children}
+    </LocationContext.Provider>
+  );
+};
+
 const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
     const saved = localStorage.getItem("spothunt-theme");
@@ -266,12 +342,14 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <div className="App min-h-screen bg-background">
-          <BrowserRouter>
-            <AppRouter />
-          </BrowserRouter>
-          <Toaster position="top-center" richColors />
-        </div>
+        <LocationProvider>
+          <div className="App min-h-screen bg-background">
+            <BrowserRouter>
+              <AppRouter />
+            </BrowserRouter>
+            <Toaster position="top-center" richColors />
+          </div>
+        </LocationProvider>
       </AuthProvider>
     </ThemeProvider>
   );
