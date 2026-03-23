@@ -105,6 +105,7 @@ async def search_nearby_places(
     category: str = "all",
     radius: int = 2000,  # meters
     keyword: Optional[str] = None,
+    subcategory: Optional[str] = None,
     open_now: bool = False,
     page_token: Optional[str] = None
 ) -> Dict[str, Any]:
@@ -116,6 +117,38 @@ async def search_nearby_places(
     places = []
     google_types = CATEGORY_TO_GOOGLE_TYPES.get(category, CATEGORY_TO_GOOGLE_TYPES["all"])
     
+    # Build search keyword from user keyword and subcategory
+    search_keyword = keyword
+    if subcategory and subcategory != "all":
+        # Map subcategory IDs to search terms
+        subcategory_keywords = {
+            # Food types
+            "italian": "italian restaurant",
+            "pizza": "pizza",
+            "burger": "burger hamburger",
+            "sushi": "sushi japanese",
+            "mexican": "mexican restaurant",
+            "bbq": "bbq barbecue churrasco",
+            "asian": "asian restaurant",
+            "seafood": "seafood restaurant",
+            "steakhouse": "steakhouse",
+            "vegan": "vegan vegetarian",
+            # Bar types
+            "pub": "pub",
+            "rooftop": "rooftop bar",
+            "dive_bar": "dive bar boteco",
+            "wine_bar": "wine bar",
+            "cocktail": "cocktail bar",
+            "sports_bar": "sports bar",
+            "beer_garden": "beer garden",
+            "lounge": "lounge bar",
+        }
+        sub_keyword = subcategory_keywords.get(subcategory, subcategory)
+        if search_keyword:
+            search_keyword = f"{search_keyword} {sub_keyword}"
+        else:
+            search_keyword = sub_keyword
+    
     try:
         async with httpx.AsyncClient() as client:
             for place_type in google_types[:2]:  # Limit to 2 types to save API calls
@@ -126,8 +159,8 @@ async def search_nearby_places(
                     "key": get_api_key(),
                 }
                 
-                if keyword:
-                    params["keyword"] = keyword
+                if search_keyword:
+                    params["keyword"] = search_keyword
                 if open_now:
                     params["opennow"] = "true"
                 if page_token:

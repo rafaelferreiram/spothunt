@@ -52,6 +52,34 @@ const CATEGORIES = [
   { id: "market", name: "Markets", icon: ShoppingBag },
 ];
 
+// Subcategories for food types
+const FOOD_TYPES = [
+  { id: "all", name: "All" },
+  { id: "italian", name: "Italian" },
+  { id: "pizza", name: "Pizza" },
+  { id: "burger", name: "Burger" },
+  { id: "sushi", name: "Sushi" },
+  { id: "mexican", name: "Mexican" },
+  { id: "bbq", name: "BBQ" },
+  { id: "asian", name: "Asian" },
+  { id: "seafood", name: "Seafood" },
+  { id: "steakhouse", name: "Steakhouse" },
+  { id: "vegan", name: "Vegan" },
+];
+
+// Subcategories for bar types
+const BAR_TYPES = [
+  { id: "all", name: "All" },
+  { id: "pub", name: "Pub" },
+  { id: "rooftop", name: "Rooftop" },
+  { id: "dive_bar", name: "Boteco" },
+  { id: "wine_bar", name: "Wine Bar" },
+  { id: "cocktail", name: "Cocktail" },
+  { id: "sports_bar", name: "Sports Bar" },
+  { id: "beer_garden", name: "Beer Garden" },
+  { id: "lounge", name: "Lounge" },
+];
+
 const RADIUS_OPTIONS = [
   { value: 1000, label: "1 km" },
   { value: 5000, label: "5 km" },
@@ -83,6 +111,7 @@ const Home = () => {
   const [places, setPlaces] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("all");
+  const [activeSubcategory, setActiveSubcategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [userLocation, setUserLocation] = useState(null);
   const [locationName, setLocationName] = useState("Finding you...");
@@ -158,6 +187,7 @@ const Home = () => {
       });
       
       if (activeCategory !== "all") params.append("category", activeCategory);
+      if (activeSubcategory !== "all") params.append("subcategory", activeSubcategory);
       if (searchQuery) params.append("search", searchQuery);
       if (filters.openNow) params.append("open_now", "true");
       if (filters.minRating > 0) params.append("min_rating", filters.minRating.toString());
@@ -174,7 +204,7 @@ const Home = () => {
     } finally {
       setLoading(false);
     }
-  }, [userLocation, activeCategory, searchQuery, filters]);
+  }, [userLocation, activeCategory, activeSubcategory, searchQuery, filters]);
 
   useEffect(() => { 
     if (userLocation) fetchPlaces(); 
@@ -452,7 +482,10 @@ const Home = () => {
               return (
                 <button
                   key={cat.id}
-                  onClick={() => setActiveCategory(cat.id)}
+                  onClick={() => {
+                    setActiveCategory(cat.id);
+                    setActiveSubcategory("all"); // Reset subcategory when changing category
+                  }}
                   className={`
                     flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-all
                     ${isActive 
@@ -469,6 +502,54 @@ const Home = () => {
           </div>
           <ScrollBar orientation="horizontal" className="invisible" />
         </ScrollArea>
+
+        {/* Subcategories for Food */}
+        {activeCategory === "restaurant" && (
+          <ScrollArea className="w-full border-t border-border/20">
+            <div className="flex gap-1.5 px-4 py-2">
+              {FOOD_TYPES.map((type) => (
+                <button
+                  key={type.id}
+                  onClick={() => setActiveSubcategory(type.id)}
+                  className={`
+                    px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all
+                    ${activeSubcategory === type.id 
+                      ? "bg-foreground/10 text-foreground font-medium" 
+                      : "text-muted-foreground hover:text-foreground"}
+                  `}
+                  data-testid={`food-type-${type.id}`}
+                >
+                  {type.name}
+                </button>
+              ))}
+            </div>
+            <ScrollBar orientation="horizontal" className="invisible" />
+          </ScrollArea>
+        )}
+
+        {/* Subcategories for Bars */}
+        {activeCategory === "bar" && (
+          <ScrollArea className="w-full border-t border-border/20">
+            <div className="flex gap-1.5 px-4 py-2">
+              {BAR_TYPES.map((type) => (
+                <button
+                  key={type.id}
+                  onClick={() => setActiveSubcategory(type.id)}
+                  className={`
+                    px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all
+                    ${activeSubcategory === type.id 
+                      ? "bg-foreground/10 text-foreground font-medium" 
+                      : "text-muted-foreground hover:text-foreground"}
+                  `}
+                  data-testid={`bar-type-${type.id}`}
+                >
+                  {type.name}
+                </button>
+              ))}
+            </div>
+            <ScrollBar orientation="horizontal" className="invisible" />
+          </ScrollArea>
+        )}
       </header>
 
       {/* Content */}

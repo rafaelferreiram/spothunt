@@ -1,69 +1,11 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { Home, Flame, Calendar, User, Plane } from "lucide-react";
 
-// Cannabis leaf SVG icon component - 7-leaflet design with bold outlines
+// Cannabis leaf SVG icon - Classic silhouette with serrated edges
 const CannabisLeaf = ({ className }) => (
-  <svg 
-    viewBox="0 0 24 24" 
-    fill="none"
-    className={className}
-  >
-    {/* Main stem */}
-    <path 
-      d="M12 22V14" 
-      stroke="currentColor" 
-      strokeWidth="1.5" 
-      strokeLinecap="round"
-    />
-    {/* Center leaflet (largest) */}
-    <path 
-      d="M12 2C12 2 10 5 10 8C10 10 11 12 12 13C13 12 14 10 14 8C14 5 12 2 12 2Z" 
-      fill="currentColor"
-      stroke="currentColor" 
-      strokeWidth="0.5"
-    />
-    {/* Upper left leaflet */}
-    <path 
-      d="M12 13C12 13 8 11 6 7C6 7 8 9 10 11C11 12 12 13 12 13Z" 
-      fill="currentColor"
-      stroke="currentColor" 
-      strokeWidth="0.5"
-    />
-    {/* Upper right leaflet */}
-    <path 
-      d="M12 13C12 13 16 11 18 7C18 7 16 9 14 11C13 12 12 13 12 13Z" 
-      fill="currentColor"
-      stroke="currentColor" 
-      strokeWidth="0.5"
-    />
-    {/* Mid left leaflet */}
-    <path 
-      d="M12 14C12 14 7 12 4 10C4 10 7 11 10 12C11 13 12 14 12 14Z" 
-      fill="currentColor"
-      stroke="currentColor" 
-      strokeWidth="0.5"
-    />
-    {/* Mid right leaflet */}
-    <path 
-      d="M12 14C12 14 17 12 20 10C20 10 17 11 14 12C13 13 12 14 12 14Z" 
-      fill="currentColor"
-      stroke="currentColor" 
-      strokeWidth="0.5"
-    />
-    {/* Lower left leaflet (smaller) */}
-    <path 
-      d="M12 14.5C12 14.5 9 14 6 13C6 13 9 13.5 11 14C11.5 14.2 12 14.5 12 14.5Z" 
-      fill="currentColor"
-      stroke="currentColor" 
-      strokeWidth="0.5"
-    />
-    {/* Lower right leaflet (smaller) */}
-    <path 
-      d="M12 14.5C12 14.5 15 14 18 13C18 13 15 13.5 13 14C12.5 14.2 12 14.5 12 14.5Z" 
-      fill="currentColor"
-      stroke="currentColor" 
-      strokeWidth="0.5"
-    />
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+    {/* Full cannabis leaf silhouette */}
+    <path d="M12 2c0 0-1.5 2.5-1.5 5c0 1.2 0.3 2.4 0.7 3.5c-1.2-1.5-3.2-3.5-5.7-5c0 0 2 3.5 4.5 5.5c-2-0.5-4.5-0.5-7 0c0 0 4 1.5 7 1.5c-1.5 0.2-3.5 0.8-5 2c0 0 3-0.5 5.5-0.5c-0.3 0.3-0.5 0.8-0.5 1.5l0 7h2l0-7c0-0.7-0.2-1.2-0.5-1.5c2.5 0 5.5 0.5 5.5 0.5c-1.5-1.2-3.5-1.8-5-2c3 0 7-1.5 7-1.5c-2.5-0.5-5-0.5-7 0c2.5-2 4.5-5.5 4.5-5.5c-2.5 1.5-4.5 3.5-5.7 5c0.4-1.1 0.7-2.3 0.7-3.5c0-2.5-1.5-5-1.5-5z"/>
   </svg>
 );
 

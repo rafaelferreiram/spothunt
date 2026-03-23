@@ -1,10 +1,11 @@
-# CityBlend - Product Requirements Document
+# SpotHunt - Product Requirements Document
 
 ## Original Problem Statement
-Build CityBlend - a hyperlocal discovery app for travelers. A mobile-first discovery app that surfaces personalized recommendations for places to eat, drink, explore, and experience based on real-time location, a built-in taste profile, and contextual trip intent.
+Build SpotHunt - a hyperlocal discovery app for travelers. A mobile-first discovery app that surfaces personalized recommendations for places to eat, drink, explore, and experience based on real-time location, a built-in taste profile, and contextual trip intent.
 
 **Update (Session 2)**: Added cannabis/weed dispensary discovery and strain information feature with real data.
 **Update (Session 4)**: Integrated Google Places API for real-time place discovery and Google Distance Matrix API for accurate travel times.
+**Update (Session 8)**: Renamed app from "CityBlend" to "SpotHunt". Added food/drink type filters and Strain Journal feature.
 
 ## User Choices
 - **Maps Provider**: Leaflet + OpenStreetMap for display, Google APIs for data
@@ -138,14 +139,25 @@ Build CityBlend - a hyperlocal discovery app for travelers. A mobile-first disco
 - **Spots Feed View**: Cannabis dispensaries now display as feed cards (like For You page) with image, location, rating, distance
 - **View Toggle**: Added Feed/List view toggle for Spots tab - users can switch between card view and compact list
 
+### March 23, 2026 (Session 9) - Major Rebrand & Features
+- **App Renamed**: "CityBlend" → "SpotHunt" across all components
+- **New Cannabis Icon**: Classic 7-leaflet silhouette design (matches user's reference image)
+- **Food Type Filters**: Added subcategory filters for restaurants - Italian, Pizza, Burger, Sushi, Mexican, BBQ, Asian, Seafood, Steakhouse, Vegan
+- **Bar Type Filters**: Added subcategory filters for bars - Pub, Rooftop, Boteco, Wine Bar, Cocktail, Sports Bar, Beer Garden, Lounge
+- **Strain Journal**: Full-featured personal cannabis journal with:
+  - Add entries with strain name, type, rating (1-5 stars), effects felt
+  - Notes and location tracking
+  - Journal statistics (total entries, unique strains, avg rating, top effects)
+  - Delete entries functionality
+
 ## Prioritized Backlog
 
 ### P0 - Critical (Next)
 - None - Core features complete including all major requested features
 
 ### P1 - High Priority
+- [ ] Add real dispensary photos from Google Places API
 - [ ] Cannabis dispensary reviews
-- [ ] Establishment age filter ("Open since X years")
 - [ ] Backend refactoring (split server.py into routers)
 
 ### P2 - Medium Priority

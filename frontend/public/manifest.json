@@ -1,6 +1,6 @@
 {
-  "name": "CityBlend",
-  "short_name": "CityBlend",
+  "name": "SpotHunt",
+  "short_name": "SpotHunt",
   "description": "Discover amazing places near you - restaurants, bars, cafes, and hidden gems",
   "start_url": "/",
   "display": "fullscreen",

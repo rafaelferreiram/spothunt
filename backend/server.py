@@ -148,6 +148,33 @@ class Review(BaseModel):
     helpful_count: int = 0
     created_at: datetime
 
+# Strain Journal Entry Model
+class StrainJournalEntry(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    entry_id: str
+    user_id: str
+    strain_id: str
+    strain_name: str
+    strain_type: Optional[str] = None
+    rating: int  # 1-5
+    effects_felt: List[str] = []
+    flavor_notes: Optional[str] = None
+    notes: Optional[str] = None
+    location: Optional[str] = None
+    date: datetime
+    created_at: datetime
+
+class StrainJournalCreate(BaseModel):
+    strain_id: str
+    strain_name: str
+    strain_type: Optional[str] = None
+    rating: int
+    effects_felt: List[str] = []
+    flavor_notes: Optional[str] = None
+    notes: Optional[str] = None
+    location: Optional[str] = None
+    date: Optional[datetime] = None
+
 # ============== AUTH HELPERS ==============
 
 async def get_current_user(request: Request) -> User:
@@ -976,6 +1003,7 @@ async def get_places(
     lat: float = 40.7128,
     lng: float = -74.0060,
     category: Optional[str] = None,
+    subcategory: Optional[str] = None,
     open_now: bool = False,
     max_distance: Optional[int] = None,
     search: Optional[str] = None,
@@ -1005,6 +1033,7 @@ async def get_places(
                 category=category or "all",
                 radius=max_distance or 2000,
                 keyword=search,
+                subcategory=subcategory,
                 open_now=open_now
             )
             
@@ -1472,6 +1501,113 @@ async def get_cannabis_stats():
             "Canada": ca_count,
             "Thailand": th_count
         }
+    }
+
+# ============== STRAIN JOURNAL ROUTES ==============
+
+@cannabis_router.get("/journal")
+async def get_strain_journal(
+    user: User = Depends(get_current_user),
+    page: int = 1,
+    limit: int = 20
+):
+    """Get user's strain journal entries"""
+    skip = (page - 1) * limit
+    
+    cursor = db.strain_journal.find(
+        {"user_id": user.user_id},
+        {"_id": 0}
+    ).sort("date", -1).skip(skip).limit(limit)
+    
+    entries = await cursor.to_list(length=limit)
+    total = await db.strain_journal.count_documents({"user_id": user.user_id})
+    
+    return {
+        "entries": entries,
+        "total": total,
+        "page": page,
+        "pages": (total + limit - 1) // limit
+    }
+
+@cannabis_router.post("/journal")
+async def create_journal_entry(
+    entry_data: StrainJournalCreate,
+    user: User = Depends(get_current_user)
+):
+    """Create a new strain journal entry"""
+    entry_id = f"journal_{uuid.uuid4().hex[:12]}"
+    now = datetime.now(timezone.utc)
+    
+    entry = {
+        "entry_id": entry_id,
+        "user_id": user.user_id,
+        "strain_id": entry_data.strain_id,
+        "strain_name": entry_data.strain_name,
+        "strain_type": entry_data.strain_type,
+        "rating": max(1, min(5, entry_data.rating)),
+        "effects_felt": entry_data.effects_felt,
+        "flavor_notes": entry_data.flavor_notes,
+        "notes": entry_data.notes,
+        "location": entry_data.location,
+        "date": (entry_data.date or now).isoformat(),
+        "created_at": now.isoformat()
+    }
+    
+    await db.strain_journal.insert_one(entry)
+    entry.pop("_id", None)
+    return entry
+
+@cannabis_router.delete("/journal/{entry_id}")
+async def delete_journal_entry(
+    entry_id: str,
+    user: User = Depends(get_current_user)
+):
+    """Delete a strain journal entry"""
+    result = await db.strain_journal.delete_one({
+        "entry_id": entry_id,
+        "user_id": user.user_id
+    })
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    
+    return {"message": "Entry deleted"}
+
+@cannabis_router.get("/journal/stats")
+async def get_journal_stats(
+    user: User = Depends(get_current_user)
+):
+    """Get user's journal statistics"""
+    total_entries = await db.strain_journal.count_documents({"user_id": user.user_id})
+    
+    # Get unique strains tried
+    unique_strains = await db.strain_journal.distinct("strain_id", {"user_id": user.user_id})
+    
+    # Get favorite effects
+    pipeline = [
+        {"$match": {"user_id": user.user_id}},
+        {"$unwind": "$effects_felt"},
+        {"$group": {"_id": "$effects_felt", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 5}
+    ]
+    effects_cursor = db.strain_journal.aggregate(pipeline)
+    top_effects = await effects_cursor.to_list(length=5)
+    
+    # Get average rating
+    avg_pipeline = [
+        {"$match": {"user_id": user.user_id}},
+        {"$group": {"_id": None, "avg_rating": {"$avg": "$rating"}}}
+    ]
+    avg_cursor = db.strain_journal.aggregate(avg_pipeline)
+    avg_result = await avg_cursor.to_list(length=1)
+    avg_rating = avg_result[0]["avg_rating"] if avg_result else 0
+    
+    return {
+        "total_entries": total_entries,
+        "unique_strains": len(unique_strains),
+        "average_rating": round(avg_rating, 1) if avg_rating else 0,
+        "top_effects": [{"effect": e["_id"], "count": e["count"]} for e in top_effects]
     }
 
 # ============== REVIEWS ROUTES ==============

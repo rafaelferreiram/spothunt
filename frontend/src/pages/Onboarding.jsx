@@ -222,7 +222,7 @@ const Onboarding = () => {
           
           <div className="flex items-center gap-2">
             <MapPin className="w-5 h-5 text-accent" />
-            <span className="font-heading font-semibold">CityBlend</span>
+            <span className="font-heading font-semibold">SpotHunt</span>
           </div>
           
           <div className="w-10" /> {/* Spacer */}

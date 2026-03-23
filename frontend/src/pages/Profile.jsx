@@ -199,7 +199,7 @@ const Profile = () => {
         {/* App Info */}
         <div className="text-center pt-4">
           <p className="text-xs text-muted-foreground">
-            CityBlend v1.0.0 • Made with ❤️ for travelers
+            SpotHunt v1.0.0 • Made with ❤️ for travelers
           </p>
         </div>
       </main>

@@ -7,23 +7,10 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { MapPin, Sparkles, Navigation, Coffee, Beer, Landmark, Eye, EyeOff, Mail, Lock, User, Flame, Plane, Calendar, Filter, Star, Clock } from "lucide-react";
 
-// Cannabis leaf icon - 7-leaflet design
+// Cannabis leaf icon - Classic silhouette
 const CannabisIcon = ({ className }) => (
   <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
-    {/* Center leaflet (largest) */}
-    <path d="M12 2C12 2 10 5 10 8C10 10 11 12 12 13C13 12 14 10 14 8C14 5 12 2 12 2Z" />
-    {/* Upper left leaflet */}
-    <path d="M12 13C12 13 8 11 6 7C6 7 8 9 10 11C11 12 12 13 12 13Z" />
-    {/* Upper right leaflet */}
-    <path d="M12 13C12 13 16 11 18 7C18 7 16 9 14 11C13 12 12 13 12 13Z" />
-    {/* Mid left leaflet */}
-    <path d="M12 14C12 14 7 12 4 10C4 10 7 11 10 12C11 13 12 14 12 14Z" />
-    {/* Mid right leaflet */}
-    <path d="M12 14C12 14 17 12 20 10C20 10 17 11 14 12C13 13 12 14 12 14Z" />
-    {/* Lower left leaflet */}
-    <path d="M12 14.5C12 14.5 9 14 6 13C6 13 9 13.5 11 14C11.5 14.2 12 14.5 12 14.5Z" />
-    {/* Lower right leaflet */}
-    <path d="M12 14.5C12 14.5 15 14 18 13C18 13 15 13.5 13 14C12.5 14.2 12 14.5 12 14.5Z" />
+    <path d="M12 2c0 0-1.5 2.5-1.5 5c0 1.2 0.3 2.4 0.7 3.5c-1.2-1.5-3.2-3.5-5.7-5c0 0 2 3.5 4.5 5.5c-2-0.5-4.5-0.5-7 0c0 0 4 1.5 7 1.5c-1.5 0.2-3.5 0.8-5 2c0 0 3-0.5 5.5-0.5c-0.3 0.3-0.5 0.8-0.5 1.5l0 7h2l0-7c0-0.7-0.2-1.2-0.5-1.5c2.5 0 5.5 0.5 5.5 0.5c-1.5-1.2-3.5-1.8-5-2c3 0 7-1.5 7-1.5c-2.5-0.5-5-0.5-7 0c2.5-2 4.5-5.5 4.5-5.5c-2.5 1.5-4.5 3.5-5.7 5c0.4-1.1 0.7-2.3 0.7-3.5c0-2.5-1.5-5-1.5-5z"/>
   </svg>
 );
 
@@ -166,7 +153,7 @@ const Landing = () => {
               <div className="w-10 h-10 rounded-2xl bg-foreground flex items-center justify-center">
                 <MapPin className="w-5 h-5 text-background" />
               </div>
-              <span className="text-xl font-semibold">CityBlend</span>
+              <span className="text-xl font-semibold">SpotHunt</span>
             </div>
           </header>
 

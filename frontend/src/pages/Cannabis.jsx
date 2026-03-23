@@ -1,9 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { API } from "@/App";
+import { API, useAuth } from "@/App";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
 import BottomNav from "@/components/BottomNav";
+import { toast } from "sonner";
 import {
   Search,
   MapPin,
@@ -16,19 +19,17 @@ import {
   Footprints,
   Car,
   Heart,
-  ExternalLink
+  ExternalLink,
+  BookOpen,
+  Plus,
+  Calendar,
+  Trash2
 } from "lucide-react";
 
-// Cannabis leaf SVG icon - 7-leaflet design
+// Cannabis leaf SVG icon - Classic silhouette
 const CannabisLeafIcon = ({ className }) => (
   <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
-    <path d="M12 2C12 2 10 5 10 8C10 10 11 12 12 13C13 12 14 10 14 8C14 5 12 2 12 2Z" />
-    <path d="M12 13C12 13 8 11 6 7C6 7 8 9 10 11C11 12 12 13 12 13Z" />
-    <path d="M12 13C12 13 16 11 18 7C18 7 16 9 14 11C13 12 12 13 12 13Z" />
-    <path d="M12 14C12 14 7 12 4 10C4 10 7 11 10 12C11 13 12 14 12 14Z" />
-    <path d="M12 14C12 14 17 12 20 10C20 10 17 11 14 12C13 13 12 14 12 14Z" />
-    <path d="M12 14.5C12 14.5 9 14 6 13C6 13 9 13.5 11 14C11.5 14.2 12 14.5 12 14.5Z" />
-    <path d="M12 14.5C12 14.5 15 14 18 13C18 13 15 13.5 13 14C12.5 14.2 12 14.5 12 14.5Z" />
+    <path d="M12 2c0 0-1.5 2.5-1.5 5c0 1.2 0.3 2.4 0.7 3.5c-1.2-1.5-3.2-3.5-5.7-5c0 0 2 3.5 4.5 5.5c-2-0.5-4.5-0.5-7 0c0 0 4 1.5 7 1.5c-1.5 0.2-3.5 0.8-5 2c0 0 3-0.5 5.5-0.5c-0.3 0.3-0.5 0.8-0.5 1.5l0 7h2l0-7c0-0.7-0.2-1.2-0.5-1.5c2.5 0 5.5 0.5 5.5 0.5c-1.5-1.2-3.5-1.8-5-2c3 0 7-1.5 7-1.5c-2.5-0.5-5-0.5-7 0c2.5-2 4.5-5.5 4.5-5.5c-2.5 1.5-4.5 3.5-5.7 5c0.4-1.1 0.7-2.3 0.7-3.5c0-2.5-1.5-5-1.5-5z"/>
   </svg>
 );
 
@@ -43,17 +44,30 @@ const EFFECTS = ["Relaxed", "Happy", "Euphoric", "Uplifted", "Creative", "Sleepy
 
 const Cannabis = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "strains");
   const [viewMode, setViewMode] = useState("feed"); // "feed" or "list"
   const [strains, setStrains] = useState([]);
   const [dispensaries, setDispensaries] = useState([]);
+  const [journalEntries, setJournalEntries] = useState([]);
+  const [journalStats, setJournalStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState("all");
   const [selectedEffect, setSelectedEffect] = useState("");
   const [userLocation, setUserLocation] = useState(null);
   const [stats, setStats] = useState(null);
+  const [showAddEntry, setShowAddEntry] = useState(false);
+  const [newEntry, setNewEntry] = useState({
+    strain_name: "",
+    strain_type: "hybrid",
+    rating: 5,
+    effects_felt: [],
+    flavor_notes: "",
+    notes: "",
+    location: ""
+  });
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -100,10 +114,84 @@ const Cannabis = () => {
     finally { setLoading(false); }
   }, [searchQuery, userLocation]);
 
+  const fetchJournal = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API}/cannabis/journal`, { credentials: "include" });
+      const data = await res.json();
+      setJournalEntries(data.entries || []);
+      
+      // Also fetch stats
+      const statsRes = await fetch(`${API}/cannabis/journal/stats`, { credentials: "include" });
+      const statsData = await statsRes.json();
+      setJournalStats(statsData);
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  }, []);
+
+  const handleAddJournalEntry = async () => {
+    if (!newEntry.strain_name.trim()) {
+      toast.error("Please enter a strain name");
+      return;
+    }
+    
+    try {
+      const res = await fetch(`${API}/cannabis/journal`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          strain_id: `custom_${Date.now()}`,
+          strain_name: newEntry.strain_name,
+          strain_type: newEntry.strain_type,
+          rating: newEntry.rating,
+          effects_felt: newEntry.effects_felt,
+          flavor_notes: newEntry.flavor_notes,
+          notes: newEntry.notes,
+          location: newEntry.location
+        })
+      });
+      
+      if (!res.ok) throw new Error("Failed to save");
+      
+      toast.success("Journal entry saved!");
+      setShowAddEntry(false);
+      setNewEntry({
+        strain_name: "",
+        strain_type: "hybrid",
+        rating: 5,
+        effects_felt: [],
+        flavor_notes: "",
+        notes: "",
+        location: ""
+      });
+      fetchJournal();
+    } catch (e) {
+      toast.error("Failed to save entry");
+    }
+  };
+
+  const handleDeleteEntry = async (entryId) => {
+    try {
+      const res = await fetch(`${API}/cannabis/journal/${entryId}`, {
+        method: "DELETE",
+        credentials: "include"
+      });
+      
+      if (!res.ok) throw new Error("Failed to delete");
+      
+      toast.success("Entry deleted");
+      fetchJournal();
+    } catch (e) {
+      toast.error("Failed to delete entry");
+    }
+  };
+
   useEffect(() => {
     if (activeTab === "strains") fetchStrains();
-    else fetchDispensaries();
-  }, [activeTab, fetchStrains, fetchDispensaries]);
+    else if (activeTab === "dispensaries") fetchDispensaries();
+    else if (activeTab === "journal") fetchJournal();
+  }, [activeTab, fetchStrains, fetchDispensaries, fetchJournal]);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -155,10 +243,10 @@ const Cannabis = () => {
 
           {/* Tab Toggle with View Mode */}
           <div className="flex items-center gap-2">
-            <div className="flex flex-1 gap-2">
+            <div className="flex flex-1 gap-1">
               <button
                 onClick={() => setActiveTab("strains")}
-                className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all ${
+                className={`flex-1 py-2.5 rounded-xl text-xs font-medium transition-all ${
                   activeTab === "strains" 
                     ? "bg-foreground text-background" 
                     : "bg-muted/50 text-muted-foreground"
@@ -169,7 +257,7 @@ const Cannabis = () => {
               </button>
               <button
                 onClick={() => setActiveTab("dispensaries")}
-                className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all ${
+                className={`flex-1 py-2.5 rounded-xl text-xs font-medium transition-all ${
                   activeTab === "dispensaries" 
                     ? "bg-foreground text-background" 
                     : "bg-muted/50 text-muted-foreground"
@@ -177,6 +265,18 @@ const Cannabis = () => {
                 data-testid="dispensaries-tab"
               >
                 Spots
+              </button>
+              <button
+                onClick={() => setActiveTab("journal")}
+                className={`flex-1 py-2.5 rounded-xl text-xs font-medium transition-all flex items-center justify-center gap-1 ${
+                  activeTab === "journal" 
+                    ? "bg-foreground text-background" 
+                    : "bg-muted/50 text-muted-foreground"
+                }`}
+                data-testid="journal-tab"
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                Journal
               </button>
             </div>
             
@@ -284,7 +384,7 @@ const Cannabis = () => {
               ))
             )}
           </div>
-        ) : (
+        ) : activeTab === "dispensaries" ? (
           <div className={viewMode === "feed" ? "space-y-4" : "space-y-2"}>
             {dispensaries.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground">
@@ -309,6 +409,150 @@ const Cannabis = () => {
                   formatDistance={formatDistance} 
                 />
               ))
+            )}
+          </div>
+        ) : (
+          /* Journal Tab Content */
+          <div className="space-y-4">
+            {/* Stats Row */}
+            {journalStats && journalStats.total_entries > 0 && (
+              <div className="grid grid-cols-3 gap-3 p-4 bg-muted/30 rounded-2xl">
+                <div className="text-center">
+                  <p className="text-2xl font-bold">{journalStats.total_entries}</p>
+                  <p className="text-xs text-muted-foreground">Entries</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold">{journalStats.unique_strains}</p>
+                  <p className="text-xs text-muted-foreground">Strains</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold flex items-center justify-center gap-1">
+                    <Star className="w-4 h-4 fill-amber-500 text-amber-500" />
+                    {journalStats.average_rating}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Avg Rating</p>
+                </div>
+              </div>
+            )}
+
+            {/* Add Entry Button / Form */}
+            {showAddEntry ? (
+              <div className="p-4 bg-card rounded-2xl border border-border/50 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-medium">New Entry</h3>
+                  <button onClick={() => setShowAddEntry(false)}>
+                    <X className="w-5 h-5 text-muted-foreground" />
+                  </button>
+                </div>
+                
+                <Input
+                  placeholder="Strain name"
+                  value={newEntry.strain_name}
+                  onChange={(e) => setNewEntry({ ...newEntry, strain_name: e.target.value })}
+                  className="h-11 rounded-xl"
+                />
+                
+                <div className="flex gap-2">
+                  {["sativa", "indica", "hybrid"].map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => setNewEntry({ ...newEntry, strain_type: type })}
+                      className={`flex-1 py-2 rounded-xl text-xs font-medium capitalize transition-all ${
+                        newEntry.strain_type === type
+                          ? "bg-foreground text-background"
+                          : "bg-muted/50 text-muted-foreground"
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+                
+                <div>
+                  <label className="text-xs text-muted-foreground mb-2 block">Rating</label>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        onClick={() => setNewEntry({ ...newEntry, rating: star })}
+                        className="p-1"
+                      >
+                        <Star className={`w-6 h-6 ${star <= newEntry.rating ? "fill-amber-500 text-amber-500" : "text-muted-foreground/30"}`} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="text-xs text-muted-foreground mb-2 block">Effects felt</label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {EFFECTS.map((effect) => (
+                      <button
+                        key={effect}
+                        onClick={() => {
+                          const effects = newEntry.effects_felt.includes(effect)
+                            ? newEntry.effects_felt.filter(e => e !== effect)
+                            : [...newEntry.effects_felt, effect];
+                          setNewEntry({ ...newEntry, effects_felt: effects });
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-xs transition-all ${
+                          newEntry.effects_felt.includes(effect)
+                            ? "bg-emerald-500/20 text-emerald-600"
+                            : "bg-muted/50 text-muted-foreground"
+                        }`}
+                      >
+                        {effect}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                <Textarea
+                  placeholder="Notes (optional)"
+                  value={newEntry.notes}
+                  onChange={(e) => setNewEntry({ ...newEntry, notes: e.target.value })}
+                  className="rounded-xl resize-none"
+                  rows={3}
+                />
+                
+                <Input
+                  placeholder="Location (optional)"
+                  value={newEntry.location}
+                  onChange={(e) => setNewEntry({ ...newEntry, location: e.target.value })}
+                  className="h-11 rounded-xl"
+                />
+                
+                <Button onClick={handleAddJournalEntry} className="w-full h-11 rounded-xl">
+                  Save Entry
+                </Button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowAddEntry(true)}
+                className="w-full p-4 rounded-2xl border-2 border-dashed border-border/50 text-muted-foreground flex items-center justify-center gap-2 hover:border-foreground/30 hover:text-foreground transition-all"
+              >
+                <Plus className="w-5 h-5" />
+                Add Journal Entry
+              </button>
+            )}
+
+            {/* Journal Entries */}
+            {journalEntries.length === 0 && !showAddEntry ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                <p>No journal entries yet</p>
+                <p className="text-sm mt-1">Start tracking your cannabis experiences</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {journalEntries.map((entry) => (
+                  <JournalEntryCard 
+                    key={entry.entry_id} 
+                    entry={entry} 
+                    onDelete={() => handleDeleteEntry(entry.entry_id)} 
+                  />
+                ))}
+              </div>
             )}
           </div>
         )}
@@ -509,6 +753,81 @@ const DispensaryRow = ({ dispensary, onClick, formatDistance }) => {
           </div>
         </div>
         <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+      </div>
+    </div>
+  );
+};
+
+// Journal Entry Card
+const JournalEntryCard = ({ entry, onDelete }) => {
+  const getTypeStyle = (type) => {
+    const t = (type || "").toLowerCase();
+    if (t.includes("sativa")) return { bg: "bg-amber-500/10", text: "text-amber-600", icon: "☀️" };
+    if (t.includes("indica")) return { bg: "bg-purple-500/10", text: "text-purple-600", icon: "🌙" };
+    return { bg: "bg-emerald-500/10", text: "text-emerald-600", icon: "✨" };
+  };
+  
+  const style = getTypeStyle(entry.strain_type);
+  const date = new Date(entry.date);
+  
+  return (
+    <div className={`p-4 rounded-2xl ${style.bg}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span>{style.icon}</span>
+            <h3 className="font-medium text-foreground">{entry.strain_name}</h3>
+          </div>
+          
+          <div className="flex items-center gap-2 mt-1">
+            <span className={`text-xs ${style.text} capitalize`}>{entry.strain_type || "Hybrid"}</span>
+            <span className="flex items-center gap-0.5">
+              {[...Array(5)].map((_, i) => (
+                <Star 
+                  key={i} 
+                  className={`w-3 h-3 ${i < entry.rating ? "fill-amber-500 text-amber-500" : "text-muted-foreground/30"}`} 
+                />
+              ))}
+            </span>
+          </div>
+          
+          {entry.effects_felt?.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {entry.effects_felt.map((effect) => (
+                <span key={effect} className="px-2 py-0.5 rounded-full bg-foreground/5 text-xs">
+                  {effect}
+                </span>
+              ))}
+            </div>
+          )}
+          
+          {entry.notes && (
+            <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{entry.notes}</p>
+          )}
+          
+          <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
+              {date.toLocaleDateString()}
+            </span>
+            {entry.location && (
+              <span className="flex items-center gap-1">
+                <MapPin className="w-3 h-3" />
+                {entry.location}
+              </span>
+            )}
+          </div>
+        </div>
+        
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          className="p-2 rounded-lg hover:bg-foreground/10 text-muted-foreground hover:text-red-500 transition-colors"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
       </div>
     </div>
   );

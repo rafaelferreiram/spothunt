@@ -45,7 +45,7 @@ export const useTheme = () => {
 
 const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
-    const saved = localStorage.getItem("cityblend-theme");
+    const saved = localStorage.getItem("spothunt-theme");
     if (saved) return saved;
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   });
@@ -54,7 +54,7 @@ const ThemeProvider = ({ children }) => {
     const root = window.document.documentElement;
     root.classList.remove("light", "dark");
     root.classList.add(theme);
-    localStorage.setItem("cityblend-theme", theme);
+    localStorage.setItem("spothunt-theme", theme);
   }, [theme]);
 
   const toggleTheme = () => {
