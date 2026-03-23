@@ -109,15 +109,24 @@ Build CityBlend - a hyperlocal discovery app for travelers. A mobile-first disco
 - **Fixed Integration**: Backend properly calls Google APIs and enriches places
 - **100% Test Pass**: All 15 backend tests pass, full frontend working
 
+### March 23, 2026 (Session 5) - UI Overhaul & Filters
+- **Advanced Filters**: Customizable radius (1km-100km), rating (3+/3.5+/4+/4.5+), price range, sort options
+- **Filter Drawer**: Modern bottom sheet UI for all filter options
+- **UI Redesign**: Clean minimalist design with neutral gray color scheme
+- **PWA Support**: manifest.json, service worker, app icons for installable app
+- **Updated Components**: Landing, Home, FeedCard, BottomNav all redesigned
+- **37 Backend Tests**: All passing including new filter parameters
+
 ## Prioritized Backlog
 
 ### P0 - Critical (Next)
-- None - Core features complete with Google APIs
+- None - Core features complete with Google APIs and advanced filters
 
 ### P1 - High Priority
 - [ ] "I'm Visiting" mode - preview places in different cities
 - [ ] Day Plan Builder - drag-and-drop itinerary
 - [ ] Cannabis dispensary reviews
+- [ ] Establishment age filter ("Open since X years")
 
 ### P2 - Medium Priority
 - [ ] Location search / "I'm visiting X city" feature
