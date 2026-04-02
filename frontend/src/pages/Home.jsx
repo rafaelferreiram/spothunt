@@ -43,7 +43,8 @@ import {
   Heart,
   User,
   Navigation,
-  Leaf
+  Leaf,
+  Crosshair
 } from "lucide-react";
 
 const CATEGORIES = [
@@ -139,6 +140,8 @@ const Home = () => {
   const [activeSubcategory, setActiveSubcategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [nearMeNow, setNearMeNow] = useState(false);
+  const [savedFilters, setSavedFilters] = useState(null);
 
   // Filters
   const [filters, setFilters] = useState({
@@ -280,6 +283,20 @@ const Home = () => {
     setDrawerOpen(true);
   };
 
+  const toggleNearMeNow = () => {
+    if (nearMeNow) {
+      // Restore previous filters
+      if (savedFilters) setFilters(savedFilters);
+      setSavedFilters(null);
+      setNearMeNow(false);
+    } else {
+      // Save current filters, apply Near Me Now
+      setSavedFilters({ ...filters });
+      setFilters({ ...filters, radius: 500, openNow: true, sortBy: "distance" });
+      setNearMeNow(true);
+    }
+  };
+
   return (
     <div className="min-h-screen min-h-[100dvh] bg-background pb-28 sm:pb-24" data-testid="home-page">
       {/* Header with safe area for notch/Dynamic Island */}
@@ -311,12 +328,31 @@ const Home = () => {
                 />
                 <p className="text-[11px] text-muted-foreground mt-0.5">
                   {isCustomLocation && <span className="text-amber-500 font-medium mr-1">Visiting</span>}
-                  {RADIUS_OPTIONS.find(r => r.value === filters.radius)?.label || "5 km"} radius
+                  {nearMeNow ? (
+                    <span className="text-primary font-medium">500m · Near Me Now</span>
+                  ) : (
+                    <>{RADIUS_OPTIONS.find(r => r.value === filters.radius)?.label || "5 km"} radius</>
+                  )}
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-2 shrink-0 ml-2">
+              {/* Near Me Now Button */}
+              <button
+                onClick={toggleNearMeNow}
+                className={`h-9 rounded-full flex items-center justify-center gap-1.5 transition-all ${
+                  nearMeNow 
+                    ? "bg-primary text-primary-foreground px-3 shadow-lg shadow-primary/25 animate-pulse-slow" 
+                    : "w-9 bg-muted/40 text-muted-foreground hover:bg-muted"
+                }`}
+                data-testid="near-me-now-btn"
+                title="Near Me Now - 500m radius"
+              >
+                <Crosshair className="w-4 h-4" />
+                {nearMeNow && <span className="text-xs font-semibold">Near</span>}
+              </button>
+
               {/* Favorites Button */}
               <button
                 onClick={() => navigate("/favorites")}
