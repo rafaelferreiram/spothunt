@@ -40,14 +40,14 @@ print('User ID: ' + userId);
 
 ```bash
 # Test auth endpoint
-curl -X GET "https://spot-hunt-dev.preview.emergentagent.com/api/auth/me" \
+curl -X GET "https://neon-hunt-staging.preview.emergentagent.com/api/auth/me" \
   -H "Authorization: Bearer YOUR_SESSION_TOKEN"
 
 # Test places endpoint
-curl -X GET "https://spot-hunt-dev.preview.emergentagent.com/api/places/?lat=40.7128&lng=-74.006"
+curl -X GET "https://neon-hunt-staging.preview.emergentagent.com/api/places/?lat=40.7128&lng=-74.006"
 
 # Test save place
-curl -X POST "https://spot-hunt-dev.preview.emergentagent.com/api/user/save-place" \
+curl -X POST "https://neon-hunt-staging.preview.emergentagent.com/api/user/save-place" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \
   -d '{"place_id": "nyc_1"}'
@@ -66,7 +66,7 @@ await page.context.add_cookies([{
     "secure": true,
     "sameSite": "None"
 }]);
-await page.goto("https://spot-hunt-dev.preview.emergentagent.com/home");
+await page.goto("https://neon-hunt-staging.preview.emergentagent.com/home");
 ```
 
 ## Checklist
