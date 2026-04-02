@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { MapPin, Sparkles, Navigation, Coffee, Beer, Landmark, Eye, EyeOff, Mail, Lock, User, Flame, Plane, Calendar, Filter, Star, Clock } from "lucide-react";
+import { MapPin, Sparkles, Navigation, Coffee, Beer, Landmark, Eye, EyeOff, Mail, Lock, User, Flame, Plane, Filter, Star, Clock } from "lucide-react";
+import SpotHuntLogo from "@/components/SpotHuntLogo";
 
 // Cannabis leaf icon - Classic silhouette
 const CannabisIcon = ({ className }) => (
@@ -509,10 +510,10 @@ const Landing = () => {
                     color="bg-purple-500/10 text-purple-600"
                   />
                   <FeatureCard 
-                    icon={Calendar} 
-                    title="Day Planner" 
-                    description="Build & share itineraries"
-                    color="bg-green-500/10 text-green-600"
+                    icon={CannabisIcon} 
+                    title="Cannabis Spots" 
+                    description="Dispensaries, strains & more"
+                    color="bg-emerald-500/10 text-emerald-600"
                   />
                 </div>
               </div>

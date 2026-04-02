@@ -1,10 +1,9 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, Flame, Calendar, User, Plane } from "lucide-react";
+import { Home, Flame, User, Plane } from "lucide-react";
 
 // Cannabis leaf SVG icon - Classic silhouette with serrated edges
 const CannabisLeaf = ({ className }) => (
   <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
-    {/* Full cannabis leaf silhouette */}
     <path d="M12 2c0 0-1.5 2.5-1.5 5c0 1.2 0.3 2.4 0.7 3.5c-1.2-1.5-3.2-3.5-5.7-5c0 0 2 3.5 4.5 5.5c-2-0.5-4.5-0.5-7 0c0 0 4 1.5 7 1.5c-1.5 0.2-3.5 0.8-5 2c0 0 3-0.5 5.5-0.5c-0.3 0.3-0.5 0.8-0.5 1.5l0 7h2l0-7c0-0.7-0.2-1.2-0.5-1.5c2.5 0 5.5 0.5 5.5 0.5c-1.5-1.2-3.5-1.8-5-2c3 0 7-1.5 7-1.5c-2.5-0.5-5-0.5-7 0c2.5-2 4.5-5.5 4.5-5.5c-2.5 1.5-4.5 3.5-5.7 5c0.4-1.1 0.7-2.3 0.7-3.5c0-2.5-1.5-5-1.5-5z"/>
   </svg>
 );
@@ -17,7 +16,6 @@ const BottomNav = () => {
     { id: "home", path: "/home", icon: Home, label: "Explore" },
     { id: "shuffle", path: "/shuffle", icon: Flame, label: "Shuffle" },
     { id: "visiting", path: "/visiting", icon: Plane, label: "Visit" },
-    { id: "plans", path: "/plans", icon: Calendar, label: "Plans" },
     { id: "cannabis", path: "/cannabis", icon: CannabisLeaf, label: "Weeds" },
   ];
 

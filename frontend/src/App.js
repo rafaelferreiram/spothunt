@@ -16,8 +16,8 @@ import StrainDetail from "@/pages/StrainDetail";
 import DispensaryDetail from "@/pages/DispensaryDetail";
 import Shuffle from "@/pages/Shuffle";
 import Visiting from "@/pages/Visiting";
-import DayPlan from "@/pages/DayPlan";
 import Favorites from "@/pages/Favorites";
+import InstallPWA from "@/components/InstallPWA";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 export const API = `${BACKEND_URL}/api`;
@@ -318,14 +318,6 @@ const AppRouter = () => {
         }
       />
       <Route
-        path="/plans"
-        element={
-          <ProtectedRoute>
-            <DayPlan />
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path="/favorites"
         element={
           <ProtectedRoute>
@@ -347,6 +339,7 @@ function App() {
             <BrowserRouter>
               <AppRouter />
             </BrowserRouter>
+            <InstallPWA />
             <Toaster position="top-center" richColors />
           </div>
         </LocationProvider>

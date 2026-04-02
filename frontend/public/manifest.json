@@ -1,14 +1,20 @@
 {
   "name": "SpotHunt",
   "short_name": "SpotHunt",
-  "description": "Discover amazing places near you - restaurants, bars, cafes, and hidden gems",
-  "start_url": "/",
-  "display": "fullscreen",
-  "background_color": "#fafafa",
-  "theme_color": "#171717",
+  "description": "Discover amazing places near you - restaurants, bars, dispensaries, and hidden gems",
+  "start_url": "/home",
+  "display": "standalone",
+  "background_color": "#0A0A0F",
+  "theme_color": "#0D9F6E",
   "orientation": "portrait-primary",
   "scope": "/",
+  "id": "/",
   "icons": [
+    {
+      "src": "/favicon-32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
@@ -20,9 +26,14 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
     }
   ],
   "categories": ["travel", "lifestyle", "food"],
-  "screenshots": [],
   "prefer_related_applications": false
 }
