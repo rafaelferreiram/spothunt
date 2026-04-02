@@ -6,7 +6,7 @@ Build SpotHunt - a hyperlocal discovery app for travelers. A mobile-first discov
 **Update (Session 2)**: Added cannabis/weed dispensary discovery and strain information feature with real data.
 **Update (Session 4)**: Integrated Google Places API for real-time place discovery and Google Distance Matrix API for accurate travel times.
 **Update (Session 8)**: Renamed app from "CityBlend" to "SpotHunt". Added food/drink type filters and Strain Journal feature.
-**Update (Session 11)**: Unified Weeds/Smoke tabs, created SpotHunt logo, removed Journal/Plans, added PWA install prompt.
+**Update (Session 11)**: Unified Weeds/Smoke tabs, created SpotHunt logo, removed Journal/Plans, added PWA install prompt, Near Me Now mode.
 
 ## User Choices
 - **Maps Provider**: Leaflet + OpenStreetMap for display, Google APIs for data
@@ -48,6 +48,7 @@ Build SpotHunt - a hyperlocal discovery app for travelers. A mobile-first discov
 - [x] Map view with category-colored markers
 - [x] Place detail page with full info
 - [x] Distance, walking time, driving time
+- [x] "Near Me Now" quick toggle (500m radius, open now, sort by distance)
 - [x] NavigationDrawer with Google Maps/Waze/Apple Maps deep links
 - [x] Category filtering (Eat, Drink, Smoke, Culture, Views, Nature, Coffee, Markets)
 - [x] Sub-category filters for each category
