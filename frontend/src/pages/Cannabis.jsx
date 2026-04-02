@@ -94,12 +94,24 @@ const Cannabis = () => {
       if (selectedType !== "all") params.append("strain_type", selectedType);
       if (selectedEffect) params.append("effect", selectedEffect);
       params.append("limit", "30");
+      
+      // Add location for regional recommendations
+      if (userLocation) {
+        params.append("lat", userLocation.lat.toString());
+        params.append("lng", userLocation.lng.toString());
+      }
+      
       const res = await fetch(`${API}/cannabis/strains?${params}`);
       const data = await res.json();
       setStrains(data.strains || []);
+      
+      // Store region info for display
+      if (data.region) {
+        console.log("Cannabis region:", data.region);
+      }
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
-  }, [searchQuery, selectedType, selectedEffect]);
+  }, [searchQuery, selectedType, selectedEffect, userLocation]);
 
   const fetchDispensaries = useCallback(async () => {
     if (!userLocation) {
@@ -268,6 +280,13 @@ const Cannabis = () => {
     }
   }, [userLocation, activeTab, fetchDispensaries]);
 
+  // Re-fetch strains when location changes (for regional recommendations)
+  useEffect(() => {
+    if (activeTab === "strains" && userLocation) {
+      fetchStrains();
+    }
+  }, [userLocation, activeTab, fetchStrains]);
+
   // Load favorites on mount for heart icons
   useEffect(() => {
     fetchFavorites();
@@ -276,7 +295,7 @@ const Cannabis = () => {
   useEffect(() => {
     const t = setTimeout(() => {
       if (activeTab === "strains") fetchStrains();
-      else fetchDispensaries();
+      else if (activeTab === "dispensaries") fetchDispensaries();
     }, 300);
     return () => clearTimeout(t);
   }, [searchQuery]);
@@ -786,42 +805,49 @@ const StrainRow = ({ strain, onClick, isFavorite = false, onToggleFavorite }) =>
   
   const style = getTypeStyle(strain.type);
   const effects = (strain.effects || []).filter(e => e && e !== "NULL");
+  const isRegionalFavorite = strain.is_regional_favorite;
 
   return (
     <div
       onClick={onClick}
-      className={`p-4 rounded-2xl ${style.bg} cursor-pointer transition-all active:scale-[0.98]`}
+      className={`p-4 rounded-2xl ${style.bg} cursor-pointer transition-all active:scale-[0.98] ${isRegionalFavorite ? "ring-2 ring-emerald-500/30" : ""}`}
       data-testid={`strain-${strain.strain_id}`}
     >
       <div className="flex items-center justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span>{style.icon}</span>
-            <h3 className="font-medium text-foreground truncate">{strain.name}</h3>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-lg">{style.icon}</span>
+            <h3 className="font-semibold text-foreground truncate text-base">{strain.name}</h3>
+            {isRegionalFavorite && (
+              <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full text-[10px] font-medium whitespace-nowrap">
+                Popular Here
+              </span>
+            )}
           </div>
-          <div className="flex items-center gap-2 mt-1">
-            <span className={`text-xs ${style.text}`}>{strain.type || "Hybrid"}</span>
+          <div className="flex items-center gap-2 mt-1.5">
+            <span className={`text-xs font-medium ${style.text}`}>{strain.type || "Hybrid"}</span>
             {strain.thc > 0 && <span className="text-xs text-muted-foreground">· {strain.thc.toFixed(0)}% THC</span>}
+            {strain.cbd > 0 && <span className="text-xs text-muted-foreground">· {strain.cbd.toFixed(0)}% CBD</span>}
           </div>
           {effects.length > 0 && (
-            <p className="text-xs text-muted-foreground mt-1.5 truncate">
-              {effects.slice(0, 3).join(" · ")}
+            <p className="text-xs text-muted-foreground mt-2 line-clamp-1">
+              {effects.slice(0, 4).join(" · ")}
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           {onToggleFavorite && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onToggleFavorite();
               }}
-              className="p-2 rounded-lg hover:bg-foreground/10 transition-colors"
+              className="p-2.5 rounded-xl hover:bg-foreground/10 transition-colors touch-manipulation"
             >
-              <Heart className={`w-4 h-4 ${isFavorite ? "fill-red-500 text-red-500" : "text-muted-foreground"}`} />
+              <Heart className={`w-5 h-5 ${isFavorite ? "fill-red-500 text-red-500" : "text-muted-foreground"}`} />
             </button>
           )}
-          <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+          <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
         </div>
       </div>
     </div>

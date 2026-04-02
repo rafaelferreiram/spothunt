@@ -82,7 +82,7 @@ Build SpotHunt - a hyperlocal discovery app for travelers. A mobile-first discov
 
 ## What's Been Implemented
 
-### Mar 23, 2026 (Session 10) - Location Editor & Real Photos & Smoke Category
+### Mar 23, 2026 (Session 10) - Location Editor & Real Photos & Smoke Category & Regional Strains
 - **Location Editor**: Users can now edit their location to explore other cities
   - Click on city name in header opens search field
   - Search for any city worldwide using Google Geocoding
@@ -99,13 +99,23 @@ Build SpotHunt - a hyperlocal discovery app for travelers. A mobile-first discov
 - **Weeds Page Location**: Added LocationEditor to Weeds/Spots tab
   - Location syncs with Home page automatically
   - Shows "Visiting" badge when exploring other cities
+- **Regional Strains Recommendations**: Strains are now customized based on user location
+  - 15+ regions supported: California, Netherlands, Spain, Canada, Brazil, etc.
+  - "Popular Here" badge on strains that are favorites in the user's region
+  - Each region has curated popular strains (e.g., OG Kush in California, White Widow in Netherlands)
+- **iPhone 14+ Responsiveness**: Enhanced PWA support for notch and Dynamic Island
+  - Safe area CSS for iPhone 14/15/16 Pro models
+  - Dynamic viewport height (100dvh)
+  - Touch targets minimum 44px
+  - Input font-size 16px to prevent zoom
 - **Components Modified**:
   - `/app/frontend/src/App.js` - Added LocationContext for global location state
   - `/app/frontend/src/pages/Home.jsx` - Added Smoke category with subcategories
-  - `/app/frontend/src/pages/Cannabis.jsx` - Added LocationEditor to Spots tab
-- **API Endpoints Added**:
-  - `GET /api/places/search-city?query=` - Search cities by name
-  - `GET /api/places/reverse-geocode?lat=&lng=` - Get city name from coordinates
+  - `/app/frontend/src/pages/Cannabis.jsx` - Regional strains + LocationEditor
+  - `/app/frontend/src/index.css` - iPhone 14+ safe area CSS
+  - `/app/backend/server.py` - Regional strain recommendations
+- **API Endpoints Updated**:
+  - `GET /api/cannabis/strains?lat=&lng=` - Now returns regional favorites first
 
 ### Jan 22, 2026 (Session 1)
 - **MVP Complete**: Full CityBlend app with all core features

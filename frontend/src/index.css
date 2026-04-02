@@ -311,6 +311,71 @@
     }
 }
 
+/* iPhone 14 Pro / 15 Pro / 16 Pro - Dynamic Island specific */
+@media only screen 
+    and (device-width: 393px) 
+    and (device-height: 852px),
+    only screen 
+    and (device-width: 430px) 
+    and (device-height: 932px) {
+    
+    @media (display-mode: standalone) {
+        /* Extra padding for Dynamic Island */
+        .pwa-safe-header {
+            padding-top: calc(env(safe-area-inset-top, 59px) + 0.5rem);
+        }
+        
+        /* Bottom nav safe area */
+        .pwa-bottom-nav {
+            padding-bottom: calc(env(safe-area-inset-bottom, 34px) + 0.25rem);
+        }
+    }
+}
+
+/* iPhone 14 Pro Max / 15 Pro Max / 16 Pro Max */
+@media only screen 
+    and (min-device-width: 428px) 
+    and (max-device-width: 430px)
+    and (min-device-height: 926px) {
+    
+    @media (display-mode: standalone) {
+        .pwa-safe-header {
+            padding-top: calc(env(safe-area-inset-top, 59px) + 0.5rem);
+        }
+    }
+}
+
+/* All iPhone models - ensure minimum touch targets */
+@media only screen and (max-width: 430px) {
+    /* Larger buttons for better touch */
+    button, [role="button"], a {
+        min-height: 44px;
+    }
+    
+    /* Input fields should be taller */
+    input, textarea, select {
+        min-height: 48px;
+        font-size: 16px !important; /* Prevent zoom on focus */
+    }
+    
+    /* Card spacing for mobile */
+    .mobile-card {
+        padding: 1rem;
+        border-radius: 1.25rem;
+    }
+    
+    /* Better scroll containers */
+    .mobile-scroll {
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x mandatory;
+    }
+    
+    /* Horizontal scroll items */
+    .mobile-scroll > * {
+        scroll-snap-align: start;
+    }
+}
+
 /* Mobile landscape safe areas */
 @media screen and (orientation: landscape) {
     .pwa-safe-header {

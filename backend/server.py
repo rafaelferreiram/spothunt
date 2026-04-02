@@ -1383,10 +1383,12 @@ async def get_strains(
     flavor: Optional[str] = None,
     min_thc: Optional[float] = None,
     max_thc: Optional[float] = None,
+    lat: Optional[float] = None,
+    lng: Optional[float] = None,
     page: int = 1,
     limit: int = 20
 ):
-    """Get cannabis strains with filters"""
+    """Get cannabis strains with filters and regional recommendations"""
     query = {}
     
     if search:
@@ -1412,8 +1414,35 @@ async def get_strains(
     
     skip = (page - 1) * limit
     
+    # Get regional preferences based on location
+    regional_strains = []
+    if lat and lng and not search:
+        region = get_cannabis_region(lat, lng)
+        regional_prefs = get_regional_strain_preferences(region)
+        
+        # Get popular strains for the region first
+        if regional_prefs.get("popular_strains"):
+            regional_query = {"name": {"$in": regional_prefs["popular_strains"]}}
+            if strain_type:
+                regional_query["type"] = {"$regex": strain_type, "$options": "i"}
+            cursor = db.strains.find(regional_query, {"_id": 0}).limit(6)
+            regional_strains = await cursor.to_list(length=6)
+            
+            # Mark as regional favorites
+            for strain in regional_strains:
+                strain["is_regional_favorite"] = True
+                strain["region"] = region
+    
+    # Get remaining strains
     cursor = db.strains.find(query, {"_id": 0}).skip(skip).limit(limit)
     strains = await cursor.to_list(length=limit)
+    
+    # Combine regional + regular (avoid duplicates)
+    if regional_strains and page == 1:
+        regional_ids = {s.get("strain_id") for s in regional_strains}
+        strains = [s for s in strains if s.get("strain_id") not in regional_ids]
+        strains = regional_strains + strains
+        strains = strains[:limit]
     
     total = await db.strains.count_documents(query)
     
@@ -1421,8 +1450,124 @@ async def get_strains(
         "strains": strains,
         "total": total,
         "page": page,
-        "pages": (total + limit - 1) // limit
+        "pages": (total + limit - 1) // limit,
+        "region": get_cannabis_region(lat, lng) if lat and lng else None
     }
+
+def get_cannabis_region(lat: float, lng: float) -> str:
+    """Determine cannabis culture region based on coordinates"""
+    # North America
+    if 24 <= lat <= 50 and -130 <= lng <= -60:
+        if lat >= 42:  # Northern states
+            return "pacific_northwest" if lng <= -110 else "northeast"
+        elif lng <= -100:
+            return "california" if lat <= 42 and lng >= -125 else "southwest"
+        else:
+            return "southeast" if lat <= 35 else "midwest"
+    
+    # Canada
+    if 42 <= lat <= 70 and -140 <= lng <= -50:
+        return "canada"
+    
+    # Europe
+    if 35 <= lat <= 72 and -10 <= lng <= 40:
+        if 50 <= lat <= 55 and 3 <= lng <= 8:
+            return "netherlands"  # Amsterdam area
+        elif 36 <= lat <= 44 and -10 <= lng <= 4:
+            return "spain"  # Iberian
+        elif 47 <= lat <= 55 and 5 <= lng <= 15:
+            return "germany"
+        elif 38 <= lat <= 47 and -10 <= lng <= 0:
+            return "portugal"
+        else:
+            return "europe"
+    
+    # South America
+    if -60 <= lat <= 15 and -80 <= lng <= -30:
+        if -35 <= lat <= -20 and -60 <= lng <= -40:
+            return "brazil"
+        elif -35 <= lat <= -30 and -60 <= lng <= -50:
+            return "uruguay"
+        else:
+            return "south_america"
+    
+    # Asia
+    if 5 <= lat <= 25 and 95 <= lng <= 110:
+        return "thailand"
+    
+    return "worldwide"
+
+def get_regional_strain_preferences(region: str) -> dict:
+    """Get popular strains and preferences for each region"""
+    preferences = {
+        "california": {
+            "popular_strains": ["OG Kush", "Blue Dream", "Gelato", "Girl Scout Cookies", "Wedding Cake", "Zkittlez"],
+            "preferred_effects": ["relaxed", "euphoric", "creative"],
+            "culture": "Premium cannabis, concentrates, edibles"
+        },
+        "pacific_northwest": {
+            "popular_strains": ["Green Crack", "Dutch Treat", "Pineapple Express", "Durban Poison", "Jack Herer", "Super Lemon Haze"],
+            "preferred_effects": ["energetic", "focused", "uplifted"],
+            "culture": "Craft cannabis, outdoor grows"
+        },
+        "northeast": {
+            "popular_strains": ["Sour Diesel", "NYC Diesel", "Headband", "Chemdawg", "White Widow", "Northern Lights"],
+            "preferred_effects": ["relaxed", "happy", "energetic"],
+            "culture": "Classic strains, medical focus"
+        },
+        "colorado": {
+            "popular_strains": ["Durban Poison", "Tangie", "Golden Goat", "Flo", "Lavender", "Trainwreck"],
+            "preferred_effects": ["energetic", "creative", "focused"],
+            "culture": "Mountain lifestyle, outdoor activities"
+        },
+        "netherlands": {
+            "popular_strains": ["White Widow", "Amnesia Haze", "Super Silver Haze", "Northern Lights", "AK-47", "Power Plant"],
+            "preferred_effects": ["euphoric", "creative", "energetic"],
+            "culture": "Coffeeshop culture, classic genetics"
+        },
+        "spain": {
+            "popular_strains": ["Critical Mass", "Amnesia Haze", "Super Skunk", "White Widow", "Cheese", "Moby Dick"],
+            "preferred_effects": ["relaxed", "happy", "euphoric"],
+            "culture": "Cannabis social clubs, Mediterranean vibes"
+        },
+        "germany": {
+            "popular_strains": ["White Widow", "Northern Lights", "Super Silver Haze", "Amnesia Haze", "Gorilla Glue", "Haze"],
+            "preferred_effects": ["relaxed", "euphoric", "focused"],
+            "culture": "Medical cannabis, CBD products"
+        },
+        "portugal": {
+            "popular_strains": ["Critical Mass", "White Widow", "Super Skunk", "Cheese", "Amnesia", "Lemon Haze"],
+            "preferred_effects": ["relaxed", "happy", "creative"],
+            "culture": "Decriminalized, beach lifestyle"
+        },
+        "canada": {
+            "popular_strains": ["Pink Kush", "Jean Guy", "God Bud", "Rockstar", "Death Bubba", "Wedding Crasher"],
+            "preferred_effects": ["relaxed", "sleepy", "happy"],
+            "culture": "Legal recreational, cold climate indicas"
+        },
+        "brazil": {
+            "popular_strains": ["Skunk", "Haze", "White Widow", "Amnesia", "Critical", "Cheese"],
+            "preferred_effects": ["relaxed", "euphoric", "creative"],
+            "culture": "Emerging market, tropical climate"
+        },
+        "uruguay": {
+            "popular_strains": ["Skunk", "Critical", "White Widow", "Amnesia Haze", "Blue Dream", "Cheese"],
+            "preferred_effects": ["relaxed", "happy", "euphoric"],
+            "culture": "First country to legalize, pioneer market"
+        },
+        "thailand": {
+            "popular_strains": ["Thai Stick", "Chocolate Thai", "Durban Poison", "Lamb's Bread", "Acapulco Gold", "Haze"],
+            "preferred_effects": ["energetic", "creative", "euphoric"],
+            "culture": "Traditional sativas, tropical grows"
+        },
+        "worldwide": {
+            "popular_strains": ["Blue Dream", "OG Kush", "White Widow", "Sour Diesel", "Girl Scout Cookies", "Gorilla Glue"],
+            "preferred_effects": ["relaxed", "euphoric", "happy"],
+            "culture": "International favorites"
+        }
+    }
+    
+    return preferences.get(region, preferences["worldwide"])
 
 @cannabis_router.get("/strains/{strain_id}")
 async def get_strain(strain_id: str):
